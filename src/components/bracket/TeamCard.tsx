@@ -206,21 +206,21 @@ export function TeamCard({
         </span>
       </div>
 
-      {/* Winner Checkmark - absolutely positioned for consistent alignment */}
+      {/* Winner Checkmark - positioned in top-right corner */}
       {isWinner && (
-        <svg
-          className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#D4BE8C] lg:right-3"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          aria-label="Winner"
-          role="img"
-        >
-          <path
-            fillRule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#D4BE8C] shadow-md shadow-black/30 lg:h-5 lg:w-5">
+          <svg
+            className="h-3 w-3 lg:h-3 lg:w-3"
+            viewBox="0 0 20 20"
+            aria-label="Winner"
+            role="img"
+          >
+            <path
+              fill="#0f172a"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            />
+          </svg>
+        </div>
       )}
     </button>
   );
