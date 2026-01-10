@@ -13,10 +13,6 @@ import { cn } from "@/lib/utils";
 import { LoadBracketDialog } from "./dialogs/LoadBracketDialog";
 import { SaveBracketDialog } from "./dialogs/SaveBracketDialog";
 
-interface MobileActionBarProps {
-  bracketRef: React.RefObject<HTMLDivElement | null>;
-}
-
 function ActionButton({
   onClick,
   disabled,
@@ -65,7 +61,7 @@ function ActionButton({
   );
 }
 
-export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
+export function MobileActionBar() {
   const { bracket } = useBracket();
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -73,19 +69,15 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const generateImage = async (): Promise<Blob | null> => {
-    if (!bracketRef.current) {
-      toast.error("Cannot generate image");
-      return null;
-    }
-
     setIsGenerating(true);
     try {
-      const blob = await generateBracketImage(bracketRef.current, {
+      const blob = await generateBracketImage(bracket, {
         userName: bracket.userName,
         bracketName: bracket.name,
       });
       return blob;
-    } catch {
+    } catch (err) {
+      console.error("Failed to generate image:", err);
       toast.error("Failed to generate image");
       return null;
     } finally {

@@ -18,28 +18,20 @@ import {
   shareImage,
 } from "@/lib/image-generator";
 
-interface ShareMenuProps {
-  bracketRef: React.RefObject<HTMLDivElement | null>;
-}
-
-export function ShareMenu({ bracketRef }: ShareMenuProps) {
+export function ShareMenu() {
   const { bracket } = useBracket();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateImage = async (): Promise<Blob | null> => {
-    if (!bracketRef.current) {
-      toast.error("Cannot generate image");
-      return null;
-    }
-
     setIsGenerating(true);
     try {
-      const blob = await generateBracketImage(bracketRef.current, {
+      const blob = await generateBracketImage(bracket, {
         userName: bracket.userName,
         bracketName: bracket.name,
       });
       return blob;
     } catch (err) {
+      console.error("Failed to generate image:", err);
       toast.error("Failed to generate image");
       return null;
     } finally {

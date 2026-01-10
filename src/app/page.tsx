@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BracketControls } from "@/components/BracketControls";
 import { Bracket } from "@/components/bracket/Bracket";
 import { WelcomeDialog } from "@/components/dialogs/WelcomeDialog";
@@ -12,7 +12,6 @@ function BracketApp() {
   useBracket(); // Access context to ensure it's available
   const [showWelcome, setShowWelcome] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const bracketRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -49,15 +48,12 @@ function BracketApp() {
 
             {/* Controls */}
             <div className="mb-4 w-full sm:mb-6 md:mb-8">
-              <BracketControls
-                bracketRef={bracketRef}
-                onResetName={() => setShowWelcome(true)}
-              />
+              <BracketControls onResetName={() => setShowWelcome(true)} />
             </div>
 
             {/* Bracket */}
             <div className="pb-4 sm:pb-8 md:pb-10">
-              <Bracket ref={bracketRef} />
+              <Bracket />
             </div>
 
             {/* Instructions - hidden on mobile/tablet (they use the app naturally) */}
@@ -78,7 +74,7 @@ function BracketApp() {
       </main>
 
       {/* Mobile/Tablet Action Bar - fixed to bottom on mobile and tablet */}
-      <MobileActionBar bracketRef={bracketRef} />
+      <MobileActionBar />
     </>
   );
 }

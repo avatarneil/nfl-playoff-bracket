@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useBracket } from "@/contexts/BracketContext";
 import { cn } from "@/lib/utils";
 import { ConferenceBracket } from "./ConferenceBracket";
@@ -206,15 +206,11 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
   );
 }
 
-export const Bracket = forwardRef<HTMLDivElement, BracketProps>(
-  function Bracket({ showUserName = true }, ref) {
-    const { bracket } = useBracket();
+export function Bracket({ showUserName = true }: BracketProps) {
+  const { bracket } = useBracket();
 
-    return (
-      <div
-        ref={ref}
-        className="flex min-w-fit flex-col items-center gap-4 rounded-2xl bg-black p-3 sm:gap-6 sm:p-4 md:gap-8 md:p-8 lg:p-6"
-      >
+  return (
+    <div className="flex min-w-fit flex-col items-center gap-4 rounded-2xl bg-black p-3 sm:gap-6 sm:p-4 md:gap-8 md:p-8 lg:p-6">
         {/* Header */}
         {showUserName && bracket.userName && (
           <div className="text-center">
@@ -256,14 +252,13 @@ export const Bracket = forwardRef<HTMLDivElement, BracketProps>(
           </ScrollHintWrapper>
         </div>
 
-        {/* Completion status - hidden on mobile since MobileActionBar shows it prominently */}
-        {bracket.isComplete && (
-          <div className="mt-2 hidden items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-2 text-center text-sm font-bold uppercase tracking-wider text-white lg:flex">
-            <Trophy className="h-4 w-4" />
-            Bracket Complete
-          </div>
-        )}
-      </div>
-    );
-  },
-);
+      {/* Completion status - hidden on mobile since MobileActionBar shows it prominently */}
+      {bracket.isComplete && (
+        <div className="mt-2 hidden items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-2 text-center text-sm font-bold uppercase tracking-wider text-white lg:flex">
+          <Trophy className="h-4 w-4" />
+          Bracket Complete
+        </div>
+      )}
+    </div>
+  );
+}
