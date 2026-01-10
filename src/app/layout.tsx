@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -45,6 +46,7 @@ export default function RootLayout({
         {children}
         {/* Position toaster at top on mobile to avoid fixed bottom bar, bottom-right on desktop */}
         <Toaster richColors position="top-center" />
+        <Analytics />
       </body>
     </html>
   );
