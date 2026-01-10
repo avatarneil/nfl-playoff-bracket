@@ -139,11 +139,11 @@ export function TeamCard({
       onClick={handleClick}
       disabled={disabled}
       className={cn(
-        "flex w-full items-center gap-2 rounded-lg border-2 transition-all duration-200",
+        "relative flex w-full items-center gap-2 rounded-lg border-2 transition-all duration-200",
         getSizeClasses(),
-        // Winner state
+        // Winner state - using pure gold for NFL championship feel
         isWinner &&
-          "border-yellow-500 bg-yellow-500/20 shadow-lg shadow-yellow-500/20",
+          "border-[#FFD700] bg-[#FFD700]/15 shadow-lg shadow-[#FFD700]/20",
         // Loser state
         isLoser && "border-gray-600 bg-gray-800/50 opacity-50",
         // Neutral state (clickable)
@@ -157,10 +157,10 @@ export function TeamCard({
           "cursor-not-allowed border-gray-700 bg-gray-800/50 opacity-70",
       )}
       style={{
-        borderLeftColor: isWinner ? "#EAB308" : team.primaryColor,
+        borderLeftColor: isWinner ? "#FFD700" : team.primaryColor,
         borderLeftWidth: "6px",
         boxShadow: isWinner
-          ? "inset 4px 0 8px -2px rgba(234, 179, 8, 0.4)"
+          ? "inset 4px 0 8px -2px rgba(255, 215, 0, 0.4)"
           : `inset 4px 0 8px -2px ${team.primaryColor}40`,
       }}
     >
@@ -206,10 +206,10 @@ export function TeamCard({
         </span>
       </div>
 
-      {/* Winner Checkmark */}
+      {/* Winner Checkmark - absolutely positioned for consistent alignment */}
       {isWinner && (
         <svg
-          className="h-4 w-4 flex-shrink-0 text-yellow-500"
+          className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#FFD700] lg:right-3"
           fill="currentColor"
           viewBox="0 0 20 20"
           aria-label="Winner"
