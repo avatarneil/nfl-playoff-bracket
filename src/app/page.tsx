@@ -39,17 +39,20 @@ function BracketApp() {
           <div className="inline-flex max-w-full flex-col items-center overflow-x-hidden">
             {/* Header - smaller on mobile */}
             <header className="mb-4 text-center sm:mb-8">
-              <h1 className="bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl md:text-5xl">
-                NFL Playoff Bracket
+              <h1 className="font-mono bg-gradient-to-r from-red-500 via-white to-blue-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl md:text-5xl">
+                bracket.build
               </h1>
               <p className="mt-1 text-sm text-gray-400 sm:mt-2 sm:text-lg">
-                2025-26 Season
+                NFL Playoff Predictions • 2025-26
               </p>
             </header>
 
             {/* Controls */}
             <div className="mb-4 w-full sm:mb-6">
-              <BracketControls bracketRef={bracketRef} />
+              <BracketControls
+                bracketRef={bracketRef}
+                onResetName={() => setShowWelcome(true)}
+              />
             </div>
 
             {/* Bracket */}

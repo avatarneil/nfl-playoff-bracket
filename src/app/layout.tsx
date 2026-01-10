@@ -23,11 +23,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "NFL Playoff Bracket 2025-26",
+  title: "bracket.build | NFL Playoff Predictions 2025-26",
   description:
-    "Build your NFL playoff bracket and share your Super Bowl predictions with friends and family.",
+    "Build your NFL playoff bracket and share your Super Bowl predictions with friends and family. An unofficial bracket builder for the NFL postseason.",
   openGraph: {
-    title: "NFL Playoff Bracket 2025-26",
+    title: "bracket.build | NFL Playoff Predictions 2025-26",
     description: "Build your NFL playoff bracket and share your predictions!",
     type: "website",
   },

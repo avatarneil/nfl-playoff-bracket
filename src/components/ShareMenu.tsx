@@ -73,8 +73,8 @@ export function ShareMenu({ bracketRef }: ShareMenuProps) {
     if (blob) {
       const shared = await shareImage(
         blob,
-        `${bracket.userName}'s NFL Playoff Bracket`,
-        "Check out my NFL playoff predictions!",
+        `${bracket.userName}'s Playoff Bracket`,
+        "Check out my NFL playoff predictions on bracket.build!",
       );
       if (!shared) {
         // Fallback to download if share not supported

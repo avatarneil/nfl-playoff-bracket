@@ -370,7 +370,7 @@ export async function generateBracketImage(
   ctx.font = "bold 32px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(
-    `${options.userName}'s NFL Playoff Bracket`,
+    `${options.userName}'s Playoff Bracket`,
     finalCanvas.width / 2,
     35,
   );
@@ -387,7 +387,7 @@ export async function generateBracketImage(
   ctx.fillStyle = "#6B7280";
   ctx.textAlign = "right";
   ctx.fillText(
-    "NFL Playoff Bracket 2025-26",
+    "bracket.build • NFL Playoffs 2025-26",
     finalCanvas.width - padding,
     finalCanvas.height - 15,
   );

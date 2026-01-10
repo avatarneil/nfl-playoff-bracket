@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# bracket.build
+
+An interactive playoff bracket builder for the NFL postseason. Create your predictions, share them with friends, and track your picks through the playoffs.
+
+**Disclaimer:** This project is not affiliated with, endorsed by, or connected to the National Football League (NFL) or any of its member teams. All team names, logos, and related marks are trademarks of their respective owners.
+
+## Features
+
+- 🏈 Full playoff bracket with Wild Card, Divisional, Championship, and Super Bowl rounds
+- 💾 Automatic progress saving with localStorage
+- 📱 Mobile-first responsive design
+- 🖼️ Export bracket as shareable image
+- 🎨 Dark mode with team colors
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun install
+```
+
+Then run the development server:
+
+```bash
 bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Next.js 16](https://nextjs.org/) with App Router
+- [React 19](https://react.dev/)
+- [Tailwind CSS 4](https://tailwindcss.com/)
+- [Radix UI](https://www.radix-ui.com/) primitives
+- [html-to-image](https://github.com/bubkoo/html-to-image) for bracket export
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Licensed under the Apache License 2.0. See [LICENSE](./LICENSE) for details.

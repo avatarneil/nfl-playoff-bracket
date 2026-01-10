@@ -44,12 +44,12 @@ export function WelcomeDialog({ open, onComplete }: WelcomeDialogProps) {
           <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-600 to-blue-600">
             <Trophy className="h-8 w-8 text-white" />
           </div>
-          <DialogTitle className="text-2xl text-white">
-            NFL Playoff Bracket 2025-26
+          <DialogTitle className="font-mono text-2xl tracking-tight text-white">
+            bracket.build
           </DialogTitle>
           <DialogDescription className="text-center text-gray-400">
-            Build your bracket and share your Super Bowl predictions with
-            friends and family.
+            Build your NFL playoff bracket and share your Super Bowl predictions
+            with friends and family.
           </DialogDescription>
         </DialogHeader>
 

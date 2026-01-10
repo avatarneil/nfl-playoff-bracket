@@ -1,28 +1,37 @@
 "use client";
 
-import { FolderOpen, Loader2, RotateCcw, Save } from "lucide-react";
+import { ChevronDown, FolderOpen, Loader2, RotateCcw, Save, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useBracket } from "@/contexts/BracketContext";
 import {
   downloadImage,
   generateBracketImage,
   shareImage,
 } from "@/lib/image-generator";
+import { clearStoredUser } from "@/lib/storage";
 import { LoadBracketDialog } from "./dialogs/LoadBracketDialog";
 import { ShareMenu } from "./ShareMenu";
 
 interface BracketControlsProps {
   bracketRef: React.RefObject<HTMLDivElement | null>;
+  onResetName?: () => void;
 }
 
-export function BracketControls({ bracketRef }: BracketControlsProps) {
-  const { bracket, resetBracket } = useBracket();
+export function BracketControls({ bracketRef, onResetName }: BracketControlsProps) {
+  const { bracket, resetBracket, setUserName } = useBracket();
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleReset = () => {
+  const handleResetBracket = () => {
     if (
       confirm(
         "Are you sure you want to reset your bracket? This cannot be undone.",
@@ -30,6 +39,20 @@ export function BracketControls({ bracketRef }: BracketControlsProps) {
     ) {
       resetBracket();
       toast.success("Bracket reset!");
+    }
+  };
+
+  const handleResetName = () => {
+    if (
+      confirm(
+        "This will clear your name and reset your bracket. Continue?",
+      )
+    ) {
+      clearStoredUser();
+      setUserName("");
+      resetBracket();
+      onResetName?.();
+      toast.success("Name and bracket reset!");
     }
   };
 
@@ -48,8 +71,8 @@ export function BracketControls({ bracketRef }: BracketControlsProps) {
       
       const shared = await shareImage(
         blob,
-        `${bracket.userName}'s NFL Playoff Bracket`,
-        "Check out my NFL playoff predictions!",
+        `${bracket.userName}'s Playoff Bracket`,
+        "Check out my NFL playoff predictions on bracket.build!",
       );
       
       if (!shared) {
@@ -69,14 +92,35 @@ export function BracketControls({ bracketRef }: BracketControlsProps) {
     <>
       {/* Desktop controls - hidden on mobile since we have MobileActionBar */}
       <div className="hidden items-center justify-center gap-2 lg:flex">
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="border-gray-700 bg-gray-800">
+            <DropdownMenuItem
+              onClick={handleResetBracket}
+              className="cursor-pointer text-white focus:bg-gray-700 focus:text-white"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Bracket
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-gray-700" />
+            <DropdownMenuItem
+              onClick={handleResetName}
+              className="cursor-pointer text-white focus:bg-gray-700 focus:text-white"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Change Name
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button
           variant="outline"
@@ -104,17 +148,38 @@ export function BracketControls({ bracketRef }: BracketControlsProps) {
         <ShareMenu bracketRef={bracketRef} />
       </div>
 
-      {/* Mobile: Just show reset button at top */}
+      {/* Mobile: Show reset dropdown at top */}
       <div className="flex justify-center lg:hidden">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleReset}
-          className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset Bracket
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="border-gray-700 bg-gray-800">
+            <DropdownMenuItem
+              onClick={handleResetBracket}
+              className="cursor-pointer text-white focus:bg-gray-700 focus:text-white"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset Bracket
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-gray-700" />
+            <DropdownMenuItem
+              onClick={handleResetName}
+              className="cursor-pointer text-white focus:bg-gray-700 focus:text-white"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Change Name
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <LoadBracketDialog

@@ -105,8 +105,8 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
     if (blob) {
       const shared = await shareImage(
         blob,
-        `${bracket.userName}'s NFL Playoff Bracket`,
-        "Check out my NFL playoff predictions!",
+        `${bracket.userName}'s Playoff Bracket`,
+        "Check out my NFL playoff predictions on bracket.build!",
       );
       if (!shared) {
         const filename = `${bracket.userName.replace(/\s+/g, "-")}-bracket-${Date.now()}.png`;
