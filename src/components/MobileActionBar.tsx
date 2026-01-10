@@ -1,7 +1,7 @@
 "use client";
 
-import { FolderOpen, Loader2, Save, Share2, Trophy } from "lucide-react";
-import { useState } from "react";
+import { Download, FolderOpen, Loader2, Share2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBracket } from "@/contexts/BracketContext";
@@ -11,7 +11,6 @@ import {
   shareImage,
 } from "@/lib/image-generator";
 import { LoadBracketDialog } from "./dialogs/LoadBracketDialog";
-import { SaveBracketDialog } from "./dialogs/SaveBracketDialog";
 
 interface MobileActionBarProps {
   bracketRef: React.RefObject<HTMLDivElement | null>;
@@ -65,9 +64,10 @@ function ActionButton({
 
 export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
   const { bracket } = useBracket();
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const hasAutoSaved = useRef(false);
 
   const generateImage = async (): Promise<Blob | null> => {
     if (!bracketRef.current) {
@@ -90,6 +90,17 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
     }
   };
 
+  const handleSaveScreenshot = async () => {
+    setIsSaving(true);
+    const blob = await generateImage();
+    if (blob) {
+      const filename = `${bracket.userName.replace(/\s+/g, "-")}-bracket-${Date.now()}.png`;
+      await downloadImage(blob, filename);
+      toast.success("Bracket saved as image!");
+    }
+    setIsSaving(false);
+  };
+
   const handleShare = async () => {
     const blob = await generateImage();
     if (blob) {
@@ -106,8 +117,35 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
     }
   };
 
+  // Auto-save screenshot when bracket becomes complete
+  useEffect(() => {
+    if (bracket.isComplete && !hasAutoSaved.current && bracketRef.current) {
+      hasAutoSaved.current = true;
+      // Small delay to ensure the UI has updated
+      const timer = setTimeout(async () => {
+        try {
+          const blob = await generateBracketImage(bracketRef.current!, {
+            userName: bracket.userName,
+            bracketName: bracket.name,
+          });
+          const filename = `${bracket.userName.replace(/\s+/g, "-")}-bracket-${Date.now()}.png`;
+          await downloadImage(blob, filename);
+          toast.success("Bracket auto-saved as image!");
+        } catch {
+          // Silently fail auto-save, user can still manually save
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // Reset the flag if bracket becomes incomplete again
+    if (!bracket.isComplete) {
+      hasAutoSaved.current = false;
+    }
+  }, [bracket.isComplete, bracket.userName, bracket.name, bracketRef]);
+
   // When bracket is complete, show celebratory completion state
-  if (bracket.isComplete) {
+  if (bracket.isComplete && bracket.superBowl?.winner) {
+    const winner = bracket.superBowl.winner;
     return (
       <>
         <div className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-3 lg:hidden safe-area-bottom">
@@ -115,9 +153,16 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
           <div className="overflow-hidden rounded-2xl border border-white/20 bg-black shadow-2xl">
             {/* Main content */}
             <div className="flex items-center gap-4 p-4">
-              {/* Trophy */}
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-white">
-                <Trophy className="h-7 w-7 text-black" />
+              {/* Winner team logo */}
+              <div 
+                className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl p-2"
+                style={{ backgroundColor: winner.primaryColor }}
+              >
+                <img 
+                  src={winner.logoUrl} 
+                  alt={`${winner.city} ${winner.name}`}
+                  className="h-10 w-10 object-contain"
+                />
               </div>
 
               {/* Text content */}
@@ -126,7 +171,7 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
                   Champion
                 </span>
                 <p className="truncate text-lg font-black uppercase tracking-tight text-white">
-                  {bracket.superBowl?.winner?.city} {bracket.superBowl?.winner?.name}
+                  {winner.city} {winner.name}
                 </p>
                 <p className="text-xs font-medium text-white/40">Super Bowl LX</p>
               </div>
@@ -150,11 +195,16 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
             <div className="flex border-t border-white/10">
               <button
                 type="button"
-                onClick={() => setSaveDialogOpen(true)}
-                className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider text-white/50 transition-colors hover:bg-white/5 hover:text-white active:bg-white/10"
+                onClick={handleSaveScreenshot}
+                disabled={isSaving}
+                className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider text-white/50 transition-colors hover:bg-white/5 hover:text-white active:bg-white/10 disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
-                Save
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Save Image
               </button>
               <div className="w-px bg-white/10" />
               <button
@@ -163,16 +213,12 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
                 className="flex flex-1 items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider text-white/50 transition-colors hover:bg-white/5 hover:text-white active:bg-white/10"
               >
                 <FolderOpen className="h-4 w-4" />
-                Load
+                My Brackets
               </button>
             </div>
           </div>
         </div>
 
-        <SaveBracketDialog
-          open={saveDialogOpen}
-          onOpenChange={setSaveDialogOpen}
-        />
         <LoadBracketDialog
           open={loadDialogOpen}
           onOpenChange={setLoadDialogOpen}
@@ -190,13 +236,7 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
           <ActionButton
             onClick={() => setLoadDialogOpen(true)}
             icon={FolderOpen}
-            label="Load"
-          />
-          
-          <ActionButton
-            onClick={() => setSaveDialogOpen(true)}
-            icon={Save}
-            label="Save"
+            label="My Brackets"
           />
 
           {/* Divider */}
@@ -213,10 +253,6 @@ export function MobileActionBar({ bracketRef }: MobileActionBarProps) {
         </div>
       </div>
 
-      <SaveBracketDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
-      />
       <LoadBracketDialog
         open={loadDialogOpen}
         onOpenChange={setLoadDialogOpen}
