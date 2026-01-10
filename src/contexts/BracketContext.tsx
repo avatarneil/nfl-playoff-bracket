@@ -30,6 +30,7 @@ interface BracketContextType {
   bracket: BracketState;
   dispatch: React.Dispatch<BracketAction>;
   selectWinner: (matchupId: string, winner: SeededTeam) => void;
+  clearWinner: (matchupId: string) => void;
   resetBracket: () => void;
   loadBracket: (bracket: BracketState) => void;
   setBracketName: (name: string) => void;
@@ -212,6 +213,83 @@ function bracketReducer(
       return newState;
     }
 
+    case "CLEAR_WINNER": {
+      const { matchupId } = action;
+      let newState = { ...state };
+
+      // Helper to clear winner in matchup array
+      const clearMatchupWinner = (
+        matchups: typeof state.afc.wildCard,
+      ): typeof state.afc.wildCard => {
+        return matchups.map((m) =>
+          m.id === matchupId ? { ...m, winner: null } : m,
+        );
+      };
+
+      // Check AFC wild card
+      if (state.afc.wildCard.some((m) => m.id === matchupId)) {
+        newState.afc = {
+          ...newState.afc,
+          wildCard: clearMatchupWinner(newState.afc.wildCard),
+        };
+        newState = updateDivisionalRound(newState, "AFC");
+        newState = updateChampionshipRound(newState, "AFC");
+        newState = updateSuperBowl(newState);
+      }
+      // Check AFC divisional
+      else if (state.afc.divisional.some((m) => m.id === matchupId)) {
+        newState.afc = {
+          ...newState.afc,
+          divisional: clearMatchupWinner(newState.afc.divisional),
+        };
+        newState = updateChampionshipRound(newState, "AFC");
+        newState = updateSuperBowl(newState);
+      }
+      // Check AFC championship
+      else if (state.afc.championship?.id === matchupId) {
+        newState.afc = {
+          ...newState.afc,
+          championship: { ...newState.afc.championship!, winner: null },
+        };
+        newState = updateSuperBowl(newState);
+      }
+      // Check NFC wild card
+      else if (state.nfc.wildCard.some((m) => m.id === matchupId)) {
+        newState.nfc = {
+          ...newState.nfc,
+          wildCard: clearMatchupWinner(newState.nfc.wildCard),
+        };
+        newState = updateDivisionalRound(newState, "NFC");
+        newState = updateChampionshipRound(newState, "NFC");
+        newState = updateSuperBowl(newState);
+      }
+      // Check NFC divisional
+      else if (state.nfc.divisional.some((m) => m.id === matchupId)) {
+        newState.nfc = {
+          ...newState.nfc,
+          divisional: clearMatchupWinner(newState.nfc.divisional),
+        };
+        newState = updateChampionshipRound(newState, "NFC");
+        newState = updateSuperBowl(newState);
+      }
+      // Check NFC championship
+      else if (state.nfc.championship?.id === matchupId) {
+        newState.nfc = {
+          ...newState.nfc,
+          championship: { ...newState.nfc.championship!, winner: null },
+        };
+        newState = updateSuperBowl(newState);
+      }
+      // Check Super Bowl
+      else if (state.superBowl?.id === matchupId) {
+        newState.superBowl = { ...newState.superBowl!, winner: null };
+      }
+
+      newState.isComplete = isBracketComplete(newState);
+      newState.updatedAt = Date.now();
+      return newState;
+    }
+
     case "RESET_BRACKET": {
       return createInitialBracket(state.userName);
     }
@@ -253,6 +331,10 @@ export function BracketProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SELECT_WINNER", matchupId, winner });
   };
 
+  const clearWinner = (matchupId: string) => {
+    dispatch({ type: "CLEAR_WINNER", matchupId });
+  };
+
   const resetBracket = () => {
     dispatch({ type: "RESET_BRACKET" });
   };
@@ -275,6 +357,7 @@ export function BracketProvider({ children }: { children: ReactNode }) {
         bracket,
         dispatch,
         selectWinner,
+        clearWinner,
         resetBracket,
         loadBracket,
         setBracketName,

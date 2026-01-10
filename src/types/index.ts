@@ -57,6 +57,7 @@ export interface SavedBracket {
 
 export type BracketAction =
   | { type: "SELECT_WINNER"; matchupId: string; winner: SeededTeam }
+  | { type: "CLEAR_WINNER"; matchupId: string }
   | { type: "RESET_BRACKET" }
   | { type: "LOAD_BRACKET"; bracket: BracketState }
   | { type: "SET_BRACKET_NAME"; name: string }

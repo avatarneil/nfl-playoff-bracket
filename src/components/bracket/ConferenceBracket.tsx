@@ -10,7 +10,7 @@ interface ConferenceBracketProps {
 }
 
 export function ConferenceBracket({ conference }: ConferenceBracketProps) {
-  const { bracket, selectWinner } = useBracket();
+  const { bracket, selectWinner, clearWinner } = useBracket();
   const confState = conference === "AFC" ? bracket.afc : bracket.nfc;
   const isAFC = conference === "AFC";
 
@@ -54,6 +54,7 @@ export function ConferenceBracket({ conference }: ConferenceBracketProps) {
               key={matchup.id}
               matchup={matchup}
               onSelectWinner={selectWinner}
+              onClearWinner={clearWinner}
               size="sm"
             />
           ))}
@@ -69,6 +70,7 @@ export function ConferenceBracket({ conference }: ConferenceBracketProps) {
               key={matchup.id}
               matchup={matchup}
               onSelectWinner={selectWinner}
+              onClearWinner={clearWinner}
               size="sm"
             />
           ))}
@@ -83,6 +85,7 @@ export function ConferenceBracket({ conference }: ConferenceBracketProps) {
             <Matchup
               matchup={confState.championship}
               onSelectWinner={selectWinner}
+              onClearWinner={clearWinner}
               size="sm"
             />
           )}

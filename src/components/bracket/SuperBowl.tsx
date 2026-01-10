@@ -6,7 +6,7 @@ import type { SeededTeam } from "@/types";
 import { TeamCard } from "./TeamCard";
 
 export function SuperBowl() {
-  const { bracket, selectWinner } = useBracket();
+  const { bracket, selectWinner, clearWinner } = useBracket();
   const { superBowl } = bracket;
 
   if (!superBowl) return null;
@@ -15,7 +15,12 @@ export function SuperBowl() {
   const canSelect = homeTeam !== null && awayTeam !== null;
 
   const handleSelect = (team: SeededTeam) => {
-    if (canSelect) {
+    if (!canSelect) return;
+
+    // If clicking on the current winner, clear the selection
+    if (winner?.id === team.id) {
+      clearWinner(superBowl.id);
+    } else {
       selectWinner(superBowl.id, team);
     }
   };

@@ -7,6 +7,7 @@ import { TeamCard } from "./TeamCard";
 interface MatchupProps {
   matchup: MatchupType;
   onSelectWinner: (matchupId: string, winner: SeededTeam) => void;
+  onClearWinner?: (matchupId: string) => void;
   size?: "sm" | "md" | "lg";
   showConnector?: boolean;
   connectorSide?: "left" | "right";
@@ -15,6 +16,7 @@ interface MatchupProps {
 export function Matchup({
   matchup,
   onSelectWinner,
+  onClearWinner,
   size = "md",
   showConnector = false,
   connectorSide = "right",
@@ -23,7 +25,12 @@ export function Matchup({
   const canSelect = homeTeam !== null && awayTeam !== null;
 
   const handleSelect = (team: SeededTeam) => {
-    if (canSelect) {
+    if (!canSelect) return;
+
+    // If clicking on the current winner, clear the selection
+    if (winner?.id === team.id && onClearWinner) {
+      onClearWinner(matchup.id);
+    } else {
       onSelectWinner(matchup.id, team);
     }
   };
