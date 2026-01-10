@@ -18,7 +18,10 @@ export async function generateBracketImage(
 
   // Add header with user info
   const finalCanvas = document.createElement("canvas");
-  const ctx = finalCanvas.getContext("2d")!;
+  const ctx = finalCanvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Failed to get canvas 2D context");
+  }
   const headerHeight = 80;
   const padding = 40;
 
@@ -99,7 +102,7 @@ export async function copyImageToClipboard(blob: Blob): Promise<void> {
         "image/png": blob,
       }),
     ]);
-  } catch (error) {
+  } catch {
     throw new Error("Failed to copy image to clipboard");
   }
 }
@@ -126,7 +129,7 @@ export async function shareImage(
       files: [file],
     });
     return true;
-  } catch (error) {
+  } catch {
     // User cancelled or share failed
     return false;
   }
