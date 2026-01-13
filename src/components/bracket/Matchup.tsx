@@ -137,13 +137,9 @@ export function Matchup({
           mobileSize={effectiveMobileSize}
           desktopSize={effectiveDesktopSize}
           isLocked={isLocked}
+          hasPossession={isInProgress && possession === homeTeam?.id}
+          isRedZone={isRedZone}
         />
-        {/* Possession indicator */}
-        {isInProgress && possession === homeTeam?.id && (
-          <div className="absolute -left-2 top-1/2 -translate-y-1/2">
-            <div className="h-2 w-2 rounded-full bg-yellow-400 shadow-sm" title="Has possession" />
-          </div>
-        )}
         {/* Score display for live/completed games */}
         {showScores && homeScore !== null && homeScore !== undefined && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -172,13 +168,9 @@ export function Matchup({
           mobileSize={effectiveMobileSize}
           desktopSize={effectiveDesktopSize}
           isLocked={isLocked}
+          hasPossession={isInProgress && possession === awayTeam?.id}
+          isRedZone={isRedZone}
         />
-        {/* Possession indicator */}
-        {isInProgress && possession === awayTeam?.id && (
-          <div className="absolute -left-2 top-1/2 -translate-y-1/2">
-            <div className="h-2 w-2 rounded-full bg-yellow-400 shadow-sm" title="Has possession" />
-          </div>
-        )}
         {/* Score display for live/completed games */}
         {showScores && awayScore !== null && awayScore !== undefined && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">

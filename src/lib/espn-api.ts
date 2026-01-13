@@ -40,7 +40,45 @@ const ESPN_TO_TEAM_ID: Record<string, string> = {
   ATL: "ATL",
   ARI: "ARI",
   WAS: "WAS",
+  WSH: "WAS", // ESPN uses WSH for Washington
   NYG: "NYG",
+};
+
+// Map ESPN numeric team IDs to abbreviations
+// ESPN's situation.lastPlay.team.id uses numeric IDs
+const ESPN_NUMERIC_ID_TO_ABBR: Record<string, string> = {
+  "22": "ARI",
+  "1": "ATL",
+  "33": "BAL",
+  "2": "BUF",
+  "29": "CAR",
+  "3": "CHI",
+  "4": "CIN",
+  "5": "CLE",
+  "6": "DAL",
+  "7": "DEN",
+  "8": "DET",
+  "9": "GB",
+  "34": "HOU",
+  "11": "IND",
+  "30": "JAX",
+  "12": "KC",
+  "13": "LV",
+  "24": "LAC",
+  "14": "LAR",
+  "15": "MIA",
+  "16": "MIN",
+  "17": "NE",
+  "18": "NO",
+  "19": "NYG",
+  "20": "NYJ",
+  "21": "PHI",
+  "23": "PIT",
+  "25": "SF",
+  "26": "SEA",
+  "27": "TB",
+  "10": "TEN",
+  "28": "WAS",
 };
 
 // ESPN playoff week to round name mapping
@@ -99,9 +137,14 @@ interface ESPNCompetition {
     };
   };
   situation?: {
-    possession?: string; // Team ID with possession
+    lastPlay?: {
+      team?: {
+        id: string; // Numeric team ID (e.g., "34" for Houston)
+      };
+    };
     isRedZone?: boolean;
     downDistanceText?: string; // e.g., "1st & 10"
+    down?: number; // Current down (-1 if not in a play situation)
   };
   conferenceCompetition?: boolean;
 }
@@ -208,9 +251,13 @@ function parseESPNEvent(event: ESPNEvent): LiveMatchupResult | null {
   const isHalftime = description.includes("halftime");
   const isEndOfQuarter = description.includes("end of");
   
-  // Get possession info
-  const possessionTeamId = competition.situation?.possession 
-    ? mapTeamAbbreviation(competition.situation.possession)
+  // Get possession info from lastPlay.team.id (numeric ESPN ID)
+  // Only show possession during active play (down > 0)
+  const numericTeamId = competition.situation?.lastPlay?.team?.id;
+  const isActiveDrive = (competition.situation?.down ?? -1) > 0;
+  const possessionAbbr = numericTeamId ? ESPN_NUMERIC_ID_TO_ABBR[numericTeamId] : null;
+  const possessionTeamId = isActiveDrive && possessionAbbr 
+    ? mapTeamAbbreviation(possessionAbbr)
     : null;
   const isRedZone = competition.situation?.isRedZone ?? false;
 
