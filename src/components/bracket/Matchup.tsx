@@ -1,5 +1,7 @@
 "use client";
 
+import { Lock } from "lucide-react";
+import { useBracket } from "@/contexts/BracketContext";
 import { cn } from "@/lib/utils";
 import type { Matchup as MatchupType, SeededTeam } from "@/types";
 import { TeamCard } from "./TeamCard";
@@ -29,8 +31,11 @@ export function Matchup({
   showConnector = false,
   connectorSide = "right",
 }: MatchupProps) {
+  const { isMatchupLocked, getLiveResultForMatchup } = useBracket();
   const { homeTeam, awayTeam, winner } = matchup;
-  const canSelect = homeTeam !== null && awayTeam !== null;
+  const isLocked = isMatchupLocked(matchup.id);
+  const liveResult = getLiveResultForMatchup(matchup.id);
+  const canSelect = homeTeam !== null && awayTeam !== null && !isLocked;
 
   const handleSelect = (team: SeededTeam) => {
     if (!canSelect) return;
@@ -48,6 +53,14 @@ export function Matchup({
   const effectiveMobileSize = mobileSize || size;
   const effectiveDesktopSize = desktopSize || size;
 
+  // Get scores for locked games
+  const homeScore = liveResult?.homeTeamId === homeTeam?.id 
+    ? liveResult?.homeScore 
+    : liveResult?.awayScore;
+  const awayScore = liveResult?.awayTeamId === awayTeam?.id 
+    ? liveResult?.awayScore 
+    : liveResult?.homeScore;
+
   return (
     <div
       className={cn(
@@ -56,26 +69,73 @@ export function Matchup({
           "lg:gap-2",
       )}
     >
-      <TeamCard
-        team={homeTeam}
-        isWinner={winner?.id === homeTeam?.id}
-        isLoser={winner !== null && winner?.id !== homeTeam?.id}
-        onClick={() => homeTeam && handleSelect(homeTeam)}
-        disabled={!canSelect}
-        size={effectiveSize}
-        mobileSize={effectiveMobileSize}
-        desktopSize={effectiveDesktopSize}
-      />
-      <TeamCard
-        team={awayTeam}
-        isWinner={winner?.id === awayTeam?.id}
-        isLoser={winner !== null && winner?.id !== awayTeam?.id}
-        onClick={() => awayTeam && handleSelect(awayTeam)}
-        disabled={!canSelect}
-        size={effectiveSize}
-        mobileSize={effectiveMobileSize}
-        desktopSize={effectiveDesktopSize}
-      />
+      {/* Lock indicator for locked matchups */}
+      {isLocked && liveResult?.isComplete && (
+        <div className="absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 shadow-md">
+          <Lock className="h-3 w-3 text-white" />
+        </div>
+      )}
+
+      {/* In-progress indicator */}
+      {liveResult?.isInProgress && (
+        <div className="absolute -right-1 -top-1 z-10">
+          <span className="relative flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-500" />
+          </span>
+        </div>
+      )}
+
+      <div className="relative">
+        <TeamCard
+          team={homeTeam}
+          isWinner={winner?.id === homeTeam?.id}
+          isLoser={winner !== null && winner?.id !== homeTeam?.id}
+          onClick={() => homeTeam && handleSelect(homeTeam)}
+          disabled={!canSelect}
+          size={effectiveSize}
+          mobileSize={effectiveMobileSize}
+          desktopSize={effectiveDesktopSize}
+          isLocked={isLocked}
+        />
+        {/* Score display for locked complete games */}
+        {isLocked && liveResult?.isComplete && homeScore !== null && homeScore !== undefined && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <span className={cn(
+              "font-mono text-lg font-bold",
+              winner?.id === homeTeam?.id ? "text-green-400" : "text-gray-400"
+            )}>
+              {homeScore}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="relative">
+        <TeamCard
+          team={awayTeam}
+          isWinner={winner?.id === awayTeam?.id}
+          isLoser={winner !== null && winner?.id !== awayTeam?.id}
+          onClick={() => awayTeam && handleSelect(awayTeam)}
+          disabled={!canSelect}
+          size={effectiveSize}
+          mobileSize={effectiveMobileSize}
+          desktopSize={effectiveDesktopSize}
+          isLocked={isLocked}
+        />
+        {/* Score display for locked complete games */}
+        {isLocked && liveResult?.isComplete && awayScore !== null && awayScore !== undefined && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            <span className={cn(
+              "font-mono text-lg font-bold",
+              winner?.id === awayTeam?.id ? "text-green-400" : "text-gray-400"
+            )}>
+              {awayScore}
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Connector line to next round */}
       {showConnector && (
         <div

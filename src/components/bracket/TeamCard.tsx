@@ -18,6 +18,8 @@ interface TeamCardProps {
   mobileSize?: Size;
   /** Size on desktop (>= lg breakpoint). Takes precedence over size on desktop. */
   desktopSize?: Size;
+  /** Whether this matchup is locked with live results */
+  isLocked?: boolean;
 }
 
 export function TeamCard({
@@ -29,6 +31,7 @@ export function TeamCard({
   size = "md",
   mobileSize,
   desktopSize,
+  isLocked = false,
 }: TeamCardProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -182,14 +185,18 @@ export function TeamCard({
           "border-[#D4BE8C] bg-[#D4BE8C]/15 shadow-lg shadow-[#D4BE8C]/20",
         // Loser state
         isLoser && "border-gray-600 bg-gray-800/50 opacity-50",
+        // Locked state (live results applied)
+        isLocked && !isWinner && !isLoser && "cursor-default border-green-700/50 bg-gray-800/70",
         // Neutral state (clickable)
         !isWinner &&
           !isLoser &&
           !disabled &&
+          !isLocked &&
           "cursor-pointer border-gray-600 bg-gray-800 hover:border-gray-400 hover:bg-gray-700 active:scale-[0.98]",
         // Disabled state
         disabled &&
           !isLoser &&
+          !isLocked &&
           "cursor-not-allowed border-gray-700 bg-gray-800/50 opacity-70",
       )}
       style={{
