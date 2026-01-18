@@ -1,4 +1,5 @@
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -78,6 +79,7 @@ export default function RootLayout({
         {/* Position toaster at top on mobile to avoid fixed bottom bar, bottom-right on desktop */}
         <Toaster richColors position="top-center" />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
