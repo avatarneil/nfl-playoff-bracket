@@ -49,15 +49,32 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
     updateScrollState();
   }, [updateScrollState]);
 
-  // Allow vertical scrolling to pass through to the page
-  // Some WebViews capture scroll events on overflow-x containers
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    // If scrolling is mostly vertical, manually scroll the window
-    // This fixes WebViews that incorrectly capture vertical scrolls
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      window.scrollBy(0, e.deltaY);
-      e.preventDefault();
-    }
+  // Touch handling: we use touch-action: pan-y to let browser handle vertical
+  // scrolling natively, and implement horizontal scrolling ourselves
+  const touchStartX = useRef<number | null>(null);
+  const touchStartScrollLeft = useRef<number>(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setShowHint(false);
+    const touch = e.touches[0];
+    touchStartX.current = touch.clientX;
+    touchStartScrollLeft.current = scrollRef.current?.scrollLeft ?? 0;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const touch = e.touches[0];
+    const deltaX = touchStartX.current - touch.clientX;
+
+    // Scroll the container horizontally
+    el.scrollLeft = touchStartScrollLeft.current + deltaX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    touchStartX.current = null;
   }, []);
 
   const scrollTo = useCallback((direction: "left" | "right") => {
@@ -105,14 +122,16 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
       className="relative w-full max-w-[calc(100vw-24px)] md:max-w-[calc(100vw-48px)] 2xl:w-auto 2xl:max-w-none"
       data-conference={conference}
     >
-      {/* Scroll container */}
+      {/* Scroll container - uses touch-action: pan-y so browser handles vertical
+          scrolling natively, while we handle horizontal scrolling via JS */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        onWheel={handleWheel}
-        onTouchStart={() => setShowHint(false)}
-        className="w-full overflow-x-auto 2xl:overflow-visible scrollbar-hide scroll-smooth"
-        style={{ touchAction: "pan-x pan-y pinch-zoom" }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="w-full overflow-x-scroll 2xl:overflow-visible scrollbar-hide"
+        style={{ touchAction: "pan-y pinch-zoom" }}
       >
         {children}
       </div>

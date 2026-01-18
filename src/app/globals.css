@@ -133,6 +133,12 @@
     /* Prevent pull-to-refresh and overscroll effects */
     overscroll-behavior-y: contain;
   }
+  /* Ensure vertical scrolling works everywhere on Android/WebView.
+     touch-action doesn't inherit, so we apply to all elements.
+     Bracket scroll containers override this with their own touch-action. */
+  *, *::before, *::after {
+    touch-action: pan-y pinch-zoom;
+  }
 }
 
 /* Safe area support for notched devices (iPhone X+, etc.) */

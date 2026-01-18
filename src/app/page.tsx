@@ -22,6 +22,22 @@ function BracketApp() {
     }
   }, []);
 
+  // Global wheel handler to ensure vertical scrolling works in WebViews
+  // Some WebViews (like ChatGPT Atlas) capture wheel events incorrectly
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      // If scrolling is mostly vertical, manually scroll the window
+      // This bypasses any containers that might incorrectly capture the event
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        window.scrollBy(0, e.deltaY);
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("wheel", handleWheel, { passive: false });
+    return () => document.removeEventListener("wheel", handleWheel);
+  }, []);
+
   // Auto-fetch live results on initial load
   useEffect(() => {
     if (isHydrated && !bracket.liveResults) {
