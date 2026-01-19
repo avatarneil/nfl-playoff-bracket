@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { type TabId, useDeepLink } from "@/hooks/useDeepLink";
 import type { LiveGameInfo, Matchup } from "@/types";
 import { useBracket } from "./BracketContext";
@@ -34,19 +34,25 @@ function matchupIdToGameId(matchupId: string): string {
 
 /**
  * Convert a URL game ID back to matchup ID
- * For now these are the same, but this allows for flexibility
+ * Normalizes to lowercase since matchup IDs are lowercase
  */
 function gameIdToMatchupId(gameId: string): string {
-  return gameId;
+  return gameId.toLowerCase();
 }
 
 export function GameDialogProvider({ children }: { children: ReactNode }) {
   const { state: urlState, openGame, closeGame, setTab, isHydrated } = useDeepLink();
-  const { getAllLiveGames, getLiveResultForMatchup, bracket } = useBracket();
+  const { getAllLiveGames, getLiveResultForMatchup, bracket, isLoadingLiveResults } = useBracket();
+
+  // Track if we have live results loaded (needed for deep linking)
+  const hasLiveResults = bracket.liveResults !== null;
 
   const [selectedGame, setSelectedGame] = useState<LiveGameInfo | null>(null);
   const [activeTab, setActiveTabState] = useState<TabId>("stats");
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Track previous URL game ID to detect browser back/forward navigation
+  const prevUrlGameIdRef = useRef<string | null>(null);
 
   /**
    * Find a game by matchup ID from available live games or bracket
@@ -135,44 +141,66 @@ export function GameDialogProvider({ children }: { children: ReactNode }) {
     [getAllLiveGames, getLiveResultForMatchup, bracket],
   );
 
-  // Sync state from URL on initial load (deep linking)
-  // This effect handles:
-  // 1. Initial page load with URL params (deep linking)
-  // 2. Browser back/forward navigation
-  // It does NOT re-verify games that are already open (to avoid race conditions)
+  // Handle deep linking on initial load only
+  // This effect runs once when live results are available and checks if URL has a game
   useEffect(() => {
-    if (!isHydrated) return;
+    // Skip if already initialized or not hydrated
+    if (isInitialized || !isHydrated) return;
 
-    // Handle game ID from URL
-    if (urlState.gameId) {
-      const matchupId = gameIdToMatchupId(urlState.gameId);
+    // Wait for live results to load before trying to open from URL
+    if (!hasLiveResults || isLoadingLiveResults) return;
 
-      // Only look up game if we don't already have one selected with this ID
-      // This prevents race conditions when opening a dialog programmatically
-      if (!selectedGame || selectedGame.matchup.id !== matchupId) {
-        const game = findGameByMatchupId(matchupId);
-        if (game) {
-          setSelectedGame(game);
-          setActiveTabState(urlState.tab);
-        } else {
-          // Invalid game ID - clear URL
-          closeGame();
-          setSelectedGame(null);
-          setActiveTabState("stats");
-        }
-      } else {
-        // Game is already selected, just sync the tab
+    const currentUrlGameId = urlState.gameId;
+    prevUrlGameIdRef.current = currentUrlGameId;
+
+    if (currentUrlGameId) {
+      const matchupId = gameIdToMatchupId(currentUrlGameId);
+      const game = findGameByMatchupId(matchupId);
+      if (game) {
+        setSelectedGame(game);
         setActiveTabState(urlState.tab);
+      } else {
+        // Invalid game ID - clear from URL
+        closeGame();
       }
-    } else if (selectedGame) {
-      // URL has no game but we have one selected - close it
-      // This handles browser back navigation
-      setSelectedGame(null);
-      setActiveTabState("stats");
     }
 
     setIsInitialized(true);
-  }, [isHydrated, urlState.gameId, urlState.tab, findGameByMatchupId, closeGame, selectedGame]);
+  }, [isHydrated, isInitialized, hasLiveResults, isLoadingLiveResults, urlState.gameId, urlState.tab, findGameByMatchupId, closeGame]);
+
+  // Handle browser back/forward navigation by watching for URL game ID changes
+  useEffect(() => {
+    if (!isInitialized || !isHydrated) return;
+
+    const currentUrlGameId = urlState.gameId;
+    const prevUrlGameId = prevUrlGameIdRef.current;
+
+    // Only act if URL game ID actually changed (browser navigation)
+    if (currentUrlGameId === prevUrlGameId) return;
+
+    const prevWasEmpty = !prevUrlGameId;
+    const currentIsEmpty = !currentUrlGameId;
+
+    // Update ref
+    prevUrlGameIdRef.current = currentUrlGameId;
+
+    // If URL went from having a game to not having one, close the dialog (browser back)
+    if (!prevWasEmpty && currentIsEmpty && selectedGame) {
+      setSelectedGame(null);
+      setActiveTabState("stats");
+      return;
+    }
+
+    // If URL went from no game to having a game (browser forward), open it
+    if (prevWasEmpty && !currentIsEmpty) {
+      const matchupId = gameIdToMatchupId(currentUrlGameId);
+      const game = findGameByMatchupId(matchupId);
+      if (game) {
+        setSelectedGame(game);
+        setActiveTabState(urlState.tab);
+      }
+    }
+  }, [isHydrated, isInitialized, urlState.gameId, urlState.tab, selectedGame, findGameByMatchupId]);
 
   /**
    * Open a game dialog
