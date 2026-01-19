@@ -1,11 +1,14 @@
 import type {
   Drive,
   GameBoxscore,
+  KeyMoment,
+  MomentumData,
   Play,
   PlayerLeaders,
   PlayerStatLine,
   ScoringPlay,
   TeamGameStats,
+  WinProbabilityPoint,
 } from "@/types";
 
 // ESPN Summary API endpoint
@@ -70,6 +73,23 @@ interface ESPNSummaryResponse {
   };
   leaders?: ESPNTeamLeaders[];
   scoringPlays?: ESPNScoringPlay[];
+  winprobability?: ESPNWinProbability[];
+}
+
+// ESPN win probability data point
+interface ESPNWinProbability {
+  playId: string;
+  homeWinPercentage: number;
+  secondsLeft: number;
+  play?: {
+    period?: {
+      number: number;
+    };
+    clock?: {
+      displayValue: string;
+    };
+    text?: string;
+  };
 }
 
 // ESPN drive and play types
@@ -411,6 +431,89 @@ function parsePlays(plays: ESPNPlay[] | undefined): Play[] {
   }));
 }
 
+/**
+ * Convert game clock to seconds elapsed from start of game
+ * NFL quarters are 15 minutes each
+ */
+function clockToSecondsElapsed(quarter: number, clock: string): number {
+  const quarterSeconds = 15 * 60; // 15 minutes per quarter
+  const completedQuarters = Math.max(0, quarter - 1);
+
+  // Parse clock (format: "MM:SS" or "M:SS")
+  const parts = clock.split(":");
+  const minutes = Number.parseInt(parts[0], 10) || 0;
+  const seconds = Number.parseInt(parts[1], 10) || 0;
+  const timeRemainingInQuarter = minutes * 60 + seconds;
+
+  // Seconds elapsed = completed quarters + time used in current quarter
+  return completedQuarters * quarterSeconds + (quarterSeconds - timeRemainingInQuarter);
+}
+
+function parseWinProbability(winProbData: ESPNWinProbability[] | undefined): WinProbabilityPoint[] {
+  if (!winProbData || !Array.isArray(winProbData)) return [];
+
+  return winProbData
+    .filter((wp) => wp.playId && typeof wp.homeWinPercentage === "number")
+    .map((wp) => {
+      const quarter = wp.play?.period?.number || 1;
+      const clock = wp.play?.clock?.displayValue || "15:00";
+
+      return {
+        playId: wp.playId,
+        homeWinPercentage: wp.homeWinPercentage * 100, // Convert 0-1 to 0-100
+        quarter,
+        clock,
+        playText: wp.play?.text || "",
+        secondsElapsed: clockToSecondsElapsed(quarter, clock),
+      };
+    })
+    .sort((a, b) => a.secondsElapsed - b.secondsElapsed);
+}
+
+function identifyKeyMoments(winProbPoints: WinProbabilityPoint[], swingThreshold = 10): KeyMoment[] {
+  if (winProbPoints.length < 2) return [];
+
+  const keyMoments: KeyMoment[] = [];
+
+  for (let i = 1; i < winProbPoints.length; i++) {
+    const prev = winProbPoints[i - 1];
+    const curr = winProbPoints[i];
+    const swing = curr.homeWinPercentage - prev.homeWinPercentage;
+    const absSwing = Math.abs(swing);
+
+    if (absSwing >= swingThreshold) {
+      keyMoments.push({
+        playId: curr.playId,
+        playText: curr.playText,
+        winProbBefore: prev.homeWinPercentage,
+        winProbAfter: curr.homeWinPercentage,
+        swing: absSwing,
+        benefitingTeamId: swing > 0 ? "home" : "away",
+        quarter: curr.quarter,
+        clock: curr.clock,
+      });
+    }
+  }
+
+  // Sort by swing magnitude (biggest swings first)
+  return keyMoments.sort((a, b) => b.swing - a.swing);
+}
+
+function parseMomentumData(winProbData: ESPNWinProbability[] | undefined): MomentumData | null {
+  const winProbability = parseWinProbability(winProbData);
+
+  if (winProbability.length === 0) return null;
+
+  const currentHomeWinPct = winProbability[winProbability.length - 1].homeWinPercentage;
+  const keyMoments = identifyKeyMoments(winProbability);
+
+  return {
+    winProbability,
+    currentHomeWinPct,
+    keyMoments,
+  };
+}
+
 export async function fetchGameBoxscore(eventId: string): Promise<GameBoxscore> {
   const response = await fetch(`${ESPN_SUMMARY_URL}?event=${eventId}`);
 
@@ -480,6 +583,7 @@ export async function fetchGameBoxscore(eventId: string): Promise<GameBoxscore> 
     drives: parseDrives(data.drives?.previous),
     lastPlay: data.drives?.current?.description || null,
     fetchedAt: Date.now(),
+    momentum: parseMomentumData(data.winprobability),
   };
 }
 
