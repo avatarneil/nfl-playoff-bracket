@@ -80,16 +80,14 @@ interface ESPNSummaryResponse {
 interface ESPNWinProbability {
   playId: string;
   homeWinPercentage: number;
-  secondsLeft: number;
-  play?: {
-    period?: {
-      number: number;
-    };
-    clock?: {
-      displayValue: string;
-    };
-    text?: string;
-  };
+  tiePercentage?: number;
+}
+
+// Play info lookup for cross-referencing win probability with play details
+interface PlayInfo {
+  quarter: number;
+  clock: string;
+  text: string;
 }
 
 // ESPN drive and play types
@@ -449,22 +447,99 @@ function clockToSecondsElapsed(quarter: number, clock: string): number {
   return completedQuarters * quarterSeconds + (quarterSeconds - timeRemainingInQuarter);
 }
 
-function parseWinProbability(winProbData: ESPNWinProbability[] | undefined): WinProbabilityPoint[] {
+/**
+ * Build a map of playId -> play info from drives data
+ * This allows us to look up quarter/clock/text for each win probability point
+ */
+function buildPlayLookupMap(drives: ESPNDrive[] | undefined): Map<string, PlayInfo> {
+  const playMap = new Map<string, PlayInfo>();
+
+  if (!drives || !Array.isArray(drives)) return playMap;
+
+  for (const drive of drives) {
+    if (!drive.plays || !Array.isArray(drive.plays)) continue;
+
+    for (const play of drive.plays) {
+      if (play.id) {
+        playMap.set(play.id, {
+          quarter: play.period?.number || 1,
+          clock: play.clock?.displayValue || "15:00",
+          text: play.text || "",
+        });
+      }
+    }
+  }
+
+  return playMap;
+}
+
+/**
+ * Estimate game progress based on array index
+ * NFL regulation is 60 minutes (3600 seconds)
+ */
+function estimateSecondsElapsed(index: number, total: number): number {
+  // Assume game is roughly 60 minutes of regulation
+  const totalGameSeconds = 60 * 60; // 3600 seconds
+  return Math.round((index / Math.max(total - 1, 1)) * totalGameSeconds);
+}
+
+/**
+ * Estimate quarter and clock from seconds elapsed
+ */
+function estimateQuarterAndClock(secondsElapsed: number): { quarter: number; clock: string } {
+  const quarterSeconds = 15 * 60; // 15 minutes per quarter
+  const quarter = Math.floor(secondsElapsed / quarterSeconds) + 1;
+  const secondsIntoQuarter = secondsElapsed % quarterSeconds;
+  const secondsRemaining = quarterSeconds - secondsIntoQuarter;
+  const minutes = Math.floor(secondsRemaining / 60);
+  const seconds = secondsRemaining % 60;
+  return {
+    quarter: Math.min(quarter, 4), // Cap at Q4 for estimation
+    clock: `${minutes}:${seconds.toString().padStart(2, "0")}`,
+  };
+}
+
+function parseWinProbability(
+  winProbData: ESPNWinProbability[] | undefined,
+  playLookup: Map<string, PlayInfo>,
+): WinProbabilityPoint[] {
   if (!winProbData || !Array.isArray(winProbData)) return [];
+
+  const totalPoints = winProbData.length;
 
   return winProbData
     .filter((wp) => wp.playId && typeof wp.homeWinPercentage === "number")
-    .map((wp) => {
-      const quarter = wp.play?.period?.number || 1;
-      const clock = wp.play?.clock?.displayValue || "15:00";
+    .map((wp, index) => {
+      // Try to look up play info from drives data
+      const playInfo = playLookup.get(wp.playId);
+
+      let quarter: number;
+      let clock: string;
+      let playText: string;
+      let secondsElapsed: number;
+
+      if (playInfo) {
+        // Use actual play data
+        quarter = playInfo.quarter;
+        clock = playInfo.clock;
+        playText = playInfo.text;
+        secondsElapsed = clockToSecondsElapsed(quarter, clock);
+      } else {
+        // Estimate based on array position
+        secondsElapsed = estimateSecondsElapsed(index, totalPoints);
+        const estimated = estimateQuarterAndClock(secondsElapsed);
+        quarter = estimated.quarter;
+        clock = estimated.clock;
+        playText = "";
+      }
 
       return {
         playId: wp.playId,
         homeWinPercentage: wp.homeWinPercentage * 100, // Convert 0-1 to 0-100
         quarter,
         clock,
-        playText: wp.play?.text || "",
-        secondsElapsed: clockToSecondsElapsed(quarter, clock),
+        playText,
+        secondsElapsed,
       };
     })
     .sort((a, b) => a.secondsElapsed - b.secondsElapsed);
@@ -499,8 +574,13 @@ function identifyKeyMoments(winProbPoints: WinProbabilityPoint[], swingThreshold
   return keyMoments.sort((a, b) => b.swing - a.swing);
 }
 
-function parseMomentumData(winProbData: ESPNWinProbability[] | undefined): MomentumData | null {
-  const winProbability = parseWinProbability(winProbData);
+function parseMomentumData(
+  winProbData: ESPNWinProbability[] | undefined,
+  drives: ESPNDrive[] | undefined,
+): MomentumData | null {
+  // Build play lookup map from drives to get quarter/clock info
+  const playLookup = buildPlayLookupMap(drives);
+  const winProbability = parseWinProbability(winProbData, playLookup);
 
   if (winProbability.length === 0) return null;
 
@@ -583,7 +663,7 @@ export async function fetchGameBoxscore(eventId: string): Promise<GameBoxscore> 
     drives: parseDrives(data.drives?.previous),
     lastPlay: data.drives?.current?.description || null,
     fetchedAt: Date.now(),
-    momentum: parseMomentumData(data.winprobability),
+    momentum: parseMomentumData(data.winprobability, data.drives?.previous),
   };
 }
 
