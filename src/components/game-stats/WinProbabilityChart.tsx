@@ -135,6 +135,11 @@ export function WinProbabilityChart({
     awayTerritory: Math.min(point.homeWinPercentage, 50),
   }));
 
+  // Determine current leader's color based on latest data point
+  const latestPoint = data[data.length - 1];
+  const currentLeaderColor =
+    latestPoint.homeWinPercentage >= 50 ? visibleHomeColor : visibleAwayColor;
+
   // Calculate domain for x-axis
   const maxSeconds = Math.max(...data.map((d) => d.secondsElapsed));
   const xDomain = [0, Math.max(maxSeconds, 60 * 60)]; // At least show to end of regulation
@@ -223,15 +228,27 @@ export function WinProbabilityChart({
             isAnimationActive={false}
           />
 
-          {/* Main probability line - rendered last to be on top */}
+          {/* White outline behind the colored line */}
           <Area
             type="monotone"
             dataKey="homeWinPercentage"
             stroke="#ffffff"
             fill="transparent"
+            strokeWidth={4}
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+          />
+
+          {/* Main probability line - team colored */}
+          <Area
+            type="monotone"
+            dataKey="homeWinPercentage"
+            stroke={currentLeaderColor}
+            fill="transparent"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: "#ffffff", stroke: "#374151", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: currentLeaderColor, stroke: "#ffffff", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
