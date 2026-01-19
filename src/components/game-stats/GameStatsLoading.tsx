@@ -3,14 +3,7 @@
 import { cn } from "@/lib/utils";
 
 function Skeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "animate-pulse rounded bg-gray-700/50",
-        className,
-      )}
-    />
-  );
+  return <div className={cn("animate-pulse rounded bg-gray-700/50", className)} />;
 }
 
 export function GameStatsLoading() {
@@ -46,6 +39,7 @@ export function GameStatsLoading() {
       {/* Stats skeleton */}
       <div className="space-y-4">
         {Array.from({ length: 6 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Static loading skeleton, items never reorder
           <div key={i} className="space-y-2">
             <div className="flex items-center justify-between">
               <Skeleton className="h-3 w-8" />

@@ -15,21 +15,19 @@ import { hasCompletedGames, hasInProgressGames } from "@/lib/espn-api";
 
 // Fallback polling interval (only used if SSE disconnects)
 const FALLBACK_REFRESH_INTERVAL = 5 * 1000;
+
 import {
   calculateChampionshipMatchup,
   calculateDivisionalMatchups,
   createInitialBracket,
   isBracketComplete,
 } from "@/lib/playoff-rules";
-import {
-  getCurrentBracket,
-  getStoredUser,
-  saveCurrentBracket,
-} from "@/lib/storage";
+import { getCurrentBracket, getStoredUser, saveCurrentBracket } from "@/lib/storage";
 import type {
   BracketAction,
   BracketState,
   Conference,
+  LiveGameInfo,
   LiveMatchupResult,
   LiveResults,
   RoundName,
@@ -53,6 +51,7 @@ interface BracketContextType {
   isLoadingLiveResults: boolean;
   isMatchupLocked: (matchupId: string) => boolean;
   getLiveResultForMatchup: (matchupId: string) => LiveMatchupResult | null;
+  getAllLiveGames: () => LiveGameInfo[];
 }
 
 const BracketContext = createContext<BracketContextType | null>(null);
@@ -94,17 +93,11 @@ function applyLiveResultToMatchup(
   });
 }
 
-function updateDivisionalRound(
-  state: BracketState,
-  conference: Conference,
-): BracketState {
+function updateDivisionalRound(state: BracketState, conference: Conference): BracketState {
   const confState = conference === "AFC" ? state.afc : state.nfc;
   const wildCardWinners = confState.wildCard.map((m) => m.winner);
 
-  const { matchup1, matchup2 } = calculateDivisionalMatchups(
-    conference,
-    wildCardWinners,
-  );
+  const { matchup1, matchup2 } = calculateDivisionalMatchups(conference, wildCardWinners);
 
   const updatedDivisional = [...confState.divisional];
   updatedDivisional[0] = {
@@ -137,10 +130,7 @@ function updateDivisionalRound(
   return { ...state, nfc: { ...state.nfc, divisional: updatedDivisional } };
 }
 
-function updateChampionshipRound(
-  state: BracketState,
-  conference: Conference,
-): BracketState {
+function updateChampionshipRound(state: BracketState, conference: Conference): BracketState {
   const confState = conference === "AFC" ? state.afc : state.nfc;
   const divisionalWinners = confState.divisional.map((m) => m.winner);
 
@@ -179,8 +169,7 @@ function updateSuperBowl(state: BracketState): BracketState {
     // Clear winner if teams changed
     winner:
       state.superBowl?.winner &&
-      (state.superBowl.winner.id === afcChamp?.id ||
-        state.superBowl.winner.id === nfcChamp?.id)
+      (state.superBowl.winner.id === afcChamp?.id || state.superBowl.winner.id === nfcChamp?.id)
         ? state.superBowl.winner
         : null,
   };
@@ -270,7 +259,11 @@ function applyAllLiveResults(state: BracketState): BracketState {
   }
 
   // Apply Super Bowl result if locked
-  if (lockedRounds.superBowl && liveResults.superBowl?.isComplete && liveResults.superBowl.winnerId) {
+  if (
+    lockedRounds.superBowl &&
+    liveResults.superBowl?.isComplete &&
+    liveResults.superBowl.winnerId
+  ) {
     const winner = findTeamById(liveResults.superBowl.winnerId);
     if (winner && newState.superBowl) {
       newState.superBowl = { ...newState.superBowl, winner };
@@ -281,10 +274,7 @@ function applyAllLiveResults(state: BracketState): BracketState {
   return newState;
 }
 
-function bracketReducer(
-  state: BracketState,
-  action: BracketAction,
-): BracketState {
+function bracketReducer(state: BracketState, action: BracketAction): BracketState {
   switch (action.type) {
     case "SELECT_WINNER": {
       const { matchupId, winner } = action;
@@ -369,9 +359,7 @@ function bracketReducer(
       const clearMatchupWinner = (
         matchups: typeof state.afc.wildCard,
       ): typeof state.afc.wildCard => {
-        return matchups.map((m) =>
-          m.id === matchupId ? { ...m, winner: null } : m,
-        );
+        return matchups.map((m) => (m.id === matchupId ? { ...m, winner: null } : m));
       };
 
       // Check AFC wild card
@@ -525,8 +513,7 @@ export function BracketProvider({ children }: { children: ReactNode }) {
       }
     : null;
 
-  const initialState =
-    migratedBracket || createInitialBracket(storedUser?.name || "");
+  const initialState = migratedBracket || createInitialBracket(storedUser?.name || "");
 
   const [bracket, dispatch] = useReducer(bracketReducer, initialState);
   const [isLoadingLiveResults, setIsLoadingLiveResults] = useState(false);
@@ -711,8 +698,10 @@ export function BracketProvider({ children }: { children: ReactNode }) {
       if (!matchup) matchup = bracket.nfc.wildCard.find((m) => m.id === matchupId);
       if (!matchup) matchup = bracket.afc.divisional.find((m) => m.id === matchupId);
       if (!matchup) matchup = bracket.nfc.divisional.find((m) => m.id === matchupId);
-      if (!matchup && bracket.afc.championship?.id === matchupId) matchup = bracket.afc.championship;
-      if (!matchup && bracket.nfc.championship?.id === matchupId) matchup = bracket.nfc.championship;
+      if (!matchup && bracket.afc.championship?.id === matchupId)
+        matchup = bracket.afc.championship;
+      if (!matchup && bracket.nfc.championship?.id === matchupId)
+        matchup = bracket.nfc.championship;
       if (!matchup && bracket.superBowl?.id === matchupId) matchup = bracket.superBowl;
 
       if (!matchup) return null;
@@ -743,6 +732,155 @@ export function BracketProvider({ children }: { children: ReactNode }) {
     [bracket],
   );
 
+  /**
+   * Get all games with live data for Live Games view
+   */
+  const getAllLiveGames = useCallback((): LiveGameInfo[] => {
+    const { liveResults } = bracket;
+    if (!liveResults) return [];
+
+    const games: LiveGameInfo[] = [];
+
+    // Helper to find matchup by teams
+    const findMatchupByTeams = (
+      matchups: typeof bracket.afc.wildCard,
+      liveResult: LiveMatchupResult,
+    ) => {
+      return matchups.find(
+        (m) =>
+          m.homeTeam &&
+          m.awayTeam &&
+          ((m.homeTeam.id === liveResult.homeTeamId && m.awayTeam.id === liveResult.awayTeamId) ||
+            (m.homeTeam.id === liveResult.awayTeamId && m.awayTeam.id === liveResult.homeTeamId)),
+      );
+    };
+
+    // AFC Wild Card
+    for (const lr of liveResults.afc.wildCard) {
+      const matchup = findMatchupByTeams(bracket.afc.wildCard, lr);
+      if (matchup) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "AFC",
+          round: "wildCard",
+        });
+      }
+    }
+
+    // NFC Wild Card
+    for (const lr of liveResults.nfc.wildCard) {
+      const matchup = findMatchupByTeams(bracket.nfc.wildCard, lr);
+      if (matchup) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "NFC",
+          round: "wildCard",
+        });
+      }
+    }
+
+    // AFC Divisional
+    for (const lr of liveResults.afc.divisional) {
+      const matchup = findMatchupByTeams(bracket.afc.divisional, lr);
+      if (matchup) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "AFC",
+          round: "divisional",
+        });
+      }
+    }
+
+    // NFC Divisional
+    for (const lr of liveResults.nfc.divisional) {
+      const matchup = findMatchupByTeams(bracket.nfc.divisional, lr);
+      if (matchup) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "NFC",
+          round: "divisional",
+        });
+      }
+    }
+
+    // AFC Championship
+    if (liveResults.afc.championship && bracket.afc.championship) {
+      const lr = liveResults.afc.championship;
+      const matchup = bracket.afc.championship;
+      if (
+        matchup.homeTeam &&
+        matchup.awayTeam &&
+        ((matchup.homeTeam.id === lr.homeTeamId && matchup.awayTeam.id === lr.awayTeamId) ||
+          (matchup.homeTeam.id === lr.awayTeamId && matchup.awayTeam.id === lr.homeTeamId))
+      ) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "AFC",
+          round: "conference",
+        });
+      }
+    }
+
+    // NFC Championship
+    if (liveResults.nfc.championship && bracket.nfc.championship) {
+      const lr = liveResults.nfc.championship;
+      const matchup = bracket.nfc.championship;
+      if (
+        matchup.homeTeam &&
+        matchup.awayTeam &&
+        ((matchup.homeTeam.id === lr.homeTeamId && matchup.awayTeam.id === lr.awayTeamId) ||
+          (matchup.homeTeam.id === lr.awayTeamId && matchup.awayTeam.id === lr.homeTeamId))
+      ) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "NFC",
+          round: "conference",
+        });
+      }
+    }
+
+    // Super Bowl
+    if (liveResults.superBowl && bracket.superBowl) {
+      const lr = liveResults.superBowl;
+      const matchup = bracket.superBowl;
+      if (
+        matchup.homeTeam &&
+        matchup.awayTeam &&
+        ((matchup.homeTeam.id === lr.homeTeamId && matchup.awayTeam.id === lr.awayTeamId) ||
+          (matchup.homeTeam.id === lr.awayTeamId && matchup.awayTeam.id === lr.homeTeamId))
+      ) {
+        games.push({
+          matchup,
+          liveResult: lr,
+          conference: "superBowl",
+          round: "superBowl",
+        });
+      }
+    }
+
+    // Sort: in-progress first, then completed, then by round
+    const roundOrder: Record<string, number> = {
+      superBowl: 0,
+      conference: 1,
+      divisional: 2,
+      wildCard: 3,
+    };
+
+    return games.sort((a, b) => {
+      // In-progress games first
+      if (a.liveResult.isInProgress && !b.liveResult.isInProgress) return -1;
+      if (!a.liveResult.isInProgress && b.liveResult.isInProgress) return 1;
+      // Then by round (higher rounds first)
+      return roundOrder[a.round] - roundOrder[b.round];
+    });
+  }, [bracket]);
+
   return (
     <BracketContext.Provider
       value={{
@@ -762,6 +900,7 @@ export function BracketProvider({ children }: { children: ReactNode }) {
         isLoadingLiveResults,
         isMatchupLocked,
         getLiveResultForMatchup,
+        getAllLiveGames,
       }}
     >
       {children}

@@ -45,16 +45,10 @@ function RoundLockToggle({ round, hasGames }: RoundLockToggleProps) {
         onClick={() => toggleRoundLock(round)}
         className={cn(
           "flex items-center gap-1.5 text-xs transition-colors",
-          isLocked
-            ? "text-green-400 hover:text-green-300"
-            : "text-gray-400 hover:text-gray-300",
+          isLocked ? "text-green-400 hover:text-green-300" : "text-gray-400 hover:text-gray-300",
         )}
       >
-        {isLocked ? (
-          <Lock className="h-3 w-3" />
-        ) : (
-          <LockOpen className="h-3 w-3" />
-        )}
+        {isLocked ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />}
         <span>{ROUND_LABELS[round]}</span>
       </button>
     </div>
@@ -103,9 +97,7 @@ export function RoundLockControl() {
           disabled={isLoadingLiveResults}
           className="h-7 px-2 text-gray-400 hover:text-white"
         >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5", isLoadingLiveResults && "animate-spin")}
-          />
+          <RefreshCw className={cn("h-3.5 w-3.5", isLoadingLiveResults && "animate-spin")} />
           <span className="ml-1 text-xs">Refresh</span>
         </Button>
       </div>

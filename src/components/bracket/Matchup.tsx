@@ -1,12 +1,12 @@
 "use client";
 
-import { Lock, BarChart3 } from "lucide-react";
+import { BarChart3, Lock } from "lucide-react";
 import { useState } from "react";
+import { GameStatsDialog } from "@/components/dialogs/GameStatsDialog";
 import { useBracket } from "@/contexts/BracketContext";
 import { cn } from "@/lib/utils";
 import type { Matchup as MatchupType, SeededTeam } from "@/types";
 import { TeamCard } from "./TeamCard";
-import { GameStatsDialog } from "@/components/dialogs/GameStatsDialog";
 
 type Size = "sm" | "md" | "lg";
 
@@ -74,12 +74,10 @@ export function Matchup({
   const effectiveDesktopSize = desktopSize || size;
 
   // Get scores - map ESPN home/away to our matchup home/away
-  const homeScore = liveResult?.homeTeamId === homeTeam?.id 
-    ? liveResult?.homeScore 
-    : liveResult?.awayScore;
-  const awayScore = liveResult?.awayTeamId === awayTeam?.id 
-    ? liveResult?.awayScore 
-    : liveResult?.homeScore;
+  const homeScore =
+    liveResult?.homeTeamId === homeTeam?.id ? liveResult?.homeScore : liveResult?.awayScore;
+  const awayScore =
+    liveResult?.awayTeamId === awayTeam?.id ? liveResult?.awayScore : liveResult?.homeScore;
 
   // Show scores for in-progress or completed games (always visible for live updates)
   const showScores = liveResult && (liveResult.isInProgress || liveResult.isComplete);
@@ -103,12 +101,12 @@ export function Matchup({
 
   return (
     <div
+      data-testid={`matchup-${matchup.conference}-${matchup.round}-${matchup.gameNumber}`}
       className={cn(
         "relative flex flex-col gap-1",
-        (effectiveMobileSize === "lg" || effectiveDesktopSize === "lg") &&
-          "lg:gap-2",
+        (effectiveMobileSize === "lg" || effectiveDesktopSize === "lg") && "lg:gap-2",
         // Add margin-bottom for stats button
-        hasGameData && "mb-6",
+        hasGameData && "mb-7",
       )}
     >
       {/* Lock indicator for locked matchups */}
@@ -121,12 +119,12 @@ export function Matchup({
       {/* In-progress game clock badge */}
       {isInProgress && (
         <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-          <div className={cn(
-            "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-lg",
-            isRedZone 
-              ? "bg-red-600 text-white" 
-              : "bg-yellow-500 text-black"
-          )}>
+          <div
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-lg",
+              isRedZone ? "bg-red-600 text-white" : "bg-yellow-500 text-black",
+            )}
+          >
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
@@ -194,19 +192,20 @@ export function Matchup({
       {hasGameData && (
         <button
           type="button"
+          data-testid={`stats-btn-${matchup.id}`}
           onClick={() => setShowStatsDialog(true)}
           className={cn(
-            "absolute -bottom-5 left-1/2 -translate-x-1/2",
-            "flex items-center gap-1 rounded-full px-2.5 py-1",
+            "absolute -bottom-6 left-1/2 -translate-x-1/2",
+            "flex items-center gap-1.5 rounded-full px-3 py-1.5",
             "text-[10px] font-semibold uppercase tracking-wide",
             "transition-all duration-200 active:scale-95",
             "shadow-sm",
-            liveResult?.isInProgress 
-              ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 hover:bg-yellow-500/30 hover:border-yellow-500/60" 
+            liveResult?.isInProgress
+              ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 hover:bg-yellow-500/30 hover:border-yellow-500/60"
               : "bg-gray-700/80 text-gray-300 border border-gray-600/50 hover:bg-gray-600/90 hover:text-white hover:border-gray-500/70",
           )}
         >
-          <BarChart3 className="h-2.5 w-2.5" />
+          <BarChart3 className="h-3 w-3" />
           <span>Stats</span>
         </button>
       )}

@@ -2,8 +2,8 @@
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import type { Drive } from "@/types";
 import { cn, getContrastSafeColor } from "@/lib/utils";
+import type { Drive } from "@/types";
 
 interface ExpandableDrivesProps {
   drives: Drive[];
@@ -40,7 +40,8 @@ function getResultColor(result: string): string {
   const r = result.toUpperCase();
   if (r.includes("TOUCHDOWN")) return "text-green-400";
   if (r.includes("FIELD GOAL")) return "text-green-400";
-  if (r.includes("FUMBLE") || r.includes("INTERCEPTION") || r.includes("INT")) return "text-red-400";
+  if (r.includes("FUMBLE") || r.includes("INTERCEPTION") || r.includes("INT"))
+    return "text-red-400";
   if (r.includes("SAFETY")) return "text-orange-400";
   return "text-gray-400";
 }
@@ -61,11 +62,7 @@ export function ExpandableDrives({
   const [expandedDrives, setExpandedDrives] = useState<Set<string>>(new Set());
 
   if (!drives || drives.length === 0) {
-    return (
-      <div className="py-8 text-center text-gray-400">
-        No drives available yet
-      </div>
-    );
+    return <div className="py-8 text-center text-gray-400">No drives available yet</div>;
   }
 
   const toggleDrive = (driveId: string) => {
@@ -118,15 +115,12 @@ export function ExpandableDrives({
               const resultColorClass = getResultColor(drive.result);
 
               return (
-                <div
-                  key={drive.id}
-                  className="overflow-hidden rounded-lg bg-gray-800/50"
-                >
+                <div key={drive.id} className="overflow-hidden rounded-lg bg-gray-800/50">
                   {/* Drive header (clickable) */}
                   <button
                     type="button"
                     onClick={() => toggleDrive(drive.id)}
-                    className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-gray-700/50"
+                    className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-gray-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                   >
                     {/* Team logo */}
                     <div
@@ -137,13 +131,12 @@ export function ExpandableDrives({
                         <img
                           src={drive.teamLogo}
                           alt={drive.teamAbbr}
+                          width={20}
+                          height={20}
                           className="h-5 w-5"
                         />
                       ) : (
-                        <span
-                          className="text-xs font-bold"
-                          style={{ color: teamColor }}
-                        >
+                        <span className="text-xs font-bold" style={{ color: teamColor }}>
                           {drive.teamAbbr}
                         </span>
                       )}
@@ -152,21 +145,16 @@ export function ExpandableDrives({
                     {/* Drive info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs font-bold"
-                          style={{ color: teamColor }}
-                        >
+                        <span className="text-xs font-bold" style={{ color: teamColor }}>
                           {drive.teamAbbr}
                         </span>
-                        <span className="text-[10px] text-gray-500">
-                          {drive.startClock}
-                        </span>
+                        <span className="text-[10px] text-gray-500">{drive.startClock}</span>
                         {resultIcon && (
                           <span
                             className={cn(
                               "rounded px-1.5 py-0.5 text-[9px] font-bold",
                               resultColorClass,
-                              drive.isScoring ? "bg-green-900/30" : "bg-gray-700/50"
+                              drive.isScoring ? "bg-green-900/30" : "bg-gray-700/50",
                             )}
                           >
                             {resultIcon}
@@ -199,7 +187,7 @@ export function ExpandableDrives({
                               "flex items-start gap-2 rounded px-2 py-1.5 text-[11px]",
                               play.isScoring
                                 ? "bg-green-900/20 border-l-2 border-green-500"
-                                : "bg-gray-800/30"
+                                : "bg-gray-800/30",
                             )}
                           >
                             {/* Play number */}
@@ -222,9 +210,7 @@ export function ExpandableDrives({
                               <span
                                 className={cn(
                                   "shrink-0 font-mono text-[10px]",
-                                  play.yardsGained > 0
-                                    ? "text-green-400"
-                                    : "text-red-400"
+                                  play.yardsGained > 0 ? "text-green-400" : "text-red-400",
                                 )}
                               >
                                 {play.yardsGained > 0 ? "+" : ""}

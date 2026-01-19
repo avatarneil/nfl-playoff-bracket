@@ -1,7 +1,7 @@
 "use client";
 
-import type { PlayerLeaders, PlayerStatLine } from "@/types";
 import { cn, getContrastSafeColor } from "@/lib/utils";
+import type { PlayerLeaders, PlayerStatLine } from "@/types";
 
 interface PlayerLeadersCardProps {
   awayLeaders: PlayerLeaders;
@@ -20,13 +20,7 @@ interface LeaderRowProps {
   homeColor: string;
 }
 
-function LeaderRow({
-  category,
-  awayLeader,
-  homeLeader,
-  awayColor,
-  homeColor,
-}: LeaderRowProps) {
+function LeaderRow({ category, awayLeader, homeLeader, awayColor, homeColor }: LeaderRowProps) {
   return (
     <div className="rounded-lg bg-gray-800/50 p-3">
       <div className="mb-2 text-center text-[10px] font-medium uppercase tracking-wider text-gray-500">
@@ -39,23 +33,22 @@ function LeaderRow({
           {awayLeader ? (
             <div className="space-y-1">
               {awayLeader.headshot && (
-                <div className="mx-auto h-10 w-10 overflow-hidden rounded-full border-2" style={{ borderColor: awayColor }}>
+                <div
+                  className="mx-auto h-10 w-10 overflow-hidden rounded-full border-2"
+                  style={{ borderColor: awayColor }}
+                >
                   <img
                     src={awayLeader.headshot}
                     alt={awayLeader.name}
+                    width={40}
+                    height={40}
                     className="h-full w-full object-cover"
                   />
                 </div>
               )}
-              <div className="text-xs font-medium text-white truncate">
-                {awayLeader.name}
-              </div>
-              <div className="text-[10px] text-gray-400">
-                {awayLeader.position}
-              </div>
-              <div className="text-xs font-mono text-gray-300">
-                {awayLeader.stats}
-              </div>
+              <div className="text-xs font-medium text-white truncate">{awayLeader.name}</div>
+              <div className="text-[10px] text-gray-400">{awayLeader.position}</div>
+              <div className="text-xs font-mono text-gray-300">{awayLeader.stats}</div>
             </div>
           ) : (
             <div className="text-xs text-gray-600">—</div>
@@ -70,23 +63,22 @@ function LeaderRow({
           {homeLeader ? (
             <div className="space-y-1">
               {homeLeader.headshot && (
-                <div className="mx-auto h-10 w-10 overflow-hidden rounded-full border-2" style={{ borderColor: homeColor }}>
+                <div
+                  className="mx-auto h-10 w-10 overflow-hidden rounded-full border-2"
+                  style={{ borderColor: homeColor }}
+                >
                   <img
                     src={homeLeader.headshot}
                     alt={homeLeader.name}
+                    width={40}
+                    height={40}
                     className="h-full w-full object-cover"
                   />
                 </div>
               )}
-              <div className="text-xs font-medium text-white truncate">
-                {homeLeader.name}
-              </div>
-              <div className="text-[10px] text-gray-400">
-                {homeLeader.position}
-              </div>
-              <div className="text-xs font-mono text-gray-300">
-                {homeLeader.stats}
-              </div>
+              <div className="text-xs font-medium text-white truncate">{homeLeader.name}</div>
+              <div className="text-[10px] text-gray-400">{homeLeader.position}</div>
+              <div className="text-xs font-mono text-gray-300">{homeLeader.stats}</div>
             </div>
           ) : (
             <div className="text-xs text-gray-600">—</div>

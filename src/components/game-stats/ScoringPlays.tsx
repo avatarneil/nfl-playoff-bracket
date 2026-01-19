@@ -1,7 +1,7 @@
 "use client";
 
-import type { ScoringPlay } from "@/types";
 import { cn, getContrastSafeColor } from "@/lib/utils";
+import type { ScoringPlay } from "@/types";
 
 interface ScoringPlaysProps {
   plays: ScoringPlay[];
@@ -38,11 +38,7 @@ export function ScoringPlays({
   awayColor,
 }: ScoringPlaysProps) {
   if (!plays || plays.length === 0) {
-    return (
-      <div className="py-8 text-center text-gray-400">
-        No scoring plays yet
-      </div>
-    );
+    return <div className="py-8 text-center text-gray-400">No scoring plays yet</div>;
   }
 
   // Group plays by quarter
@@ -80,10 +76,7 @@ export function ScoringPlays({
               const teamColor = getContrastSafeColor(isHomeTeam ? homeColor : awayColor);
 
               return (
-                <div
-                  key={play.id}
-                  className="rounded-lg bg-gray-800/50 p-3"
-                >
+                <div key={play.id} className="rounded-lg bg-gray-800/50 p-3">
                   <div className="flex items-start gap-3">
                     {/* Team logo */}
                     <div
@@ -94,31 +87,24 @@ export function ScoringPlays({
                         <img
                           src={play.teamLogo}
                           alt={play.teamAbbr}
+                          width={20}
+                          height={20}
                           className="h-5 w-5"
                         />
                       ) : (
-                        <span style={{ color: teamColor }}>
-                          {getPlayTypeIcon(play.type)}
-                        </span>
+                        <span style={{ color: teamColor }}>{getPlayTypeIcon(play.type)}</span>
                       )}
                     </div>
 
                     {/* Play details */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs font-bold"
-                          style={{ color: teamColor }}
-                        >
+                        <span className="text-xs font-bold" style={{ color: teamColor }}>
                           {play.teamAbbr}
                         </span>
-                        <span className="text-[10px] text-gray-500">
-                          {play.clock}
-                        </span>
+                        <span className="text-[10px] text-gray-500">{play.clock}</span>
                       </div>
-                      <p className="mt-0.5 text-xs leading-relaxed text-gray-300">
-                        {play.text}
-                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-gray-300">{play.text}</p>
                     </div>
 
                     {/* Score after play */}

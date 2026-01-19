@@ -27,20 +27,14 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   const handleResetBracket = () => {
-    if (
-      confirm(
-        "Are you sure you want to reset your bracket? This cannot be undone.",
-      )
-    ) {
+    if (confirm("Are you sure you want to reset your bracket? This cannot be undone.")) {
       resetBracket();
       toast.success("Bracket reset!");
     }
   };
 
   const handleResetName = () => {
-    if (
-      confirm("This will clear your name and reset your bracket. Continue?")
-    ) {
+    if (confirm("This will clear your name and reset your bracket. Continue?")) {
       clearStoredUser();
       setUserName("");
       resetBracket();
@@ -52,7 +46,10 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
   return (
     <>
       {/* Desktop controls - hidden on mobile since we have MobileActionBar */}
-      <div className="hidden items-center justify-center gap-2 lg:flex">
+      <div
+        data-testid="desktop-controls"
+        className="hidden items-center justify-center gap-2 lg:flex"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -66,6 +63,7 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="border-gray-700 bg-gray-800">
             <DropdownMenuItem
+              data-testid="reset-btn"
               onClick={handleResetBracket}
               className="cursor-pointer text-white focus:bg-gray-700 focus:text-white"
             >
@@ -84,6 +82,7 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
         </DropdownMenu>
 
         <Button
+          data-testid="save-bracket-btn"
           onClick={() => setSaveDialogOpen(true)}
           className="bg-gradient-to-r from-red-600 to-blue-600 text-white hover:from-red-700 hover:to-blue-700"
         >
@@ -92,6 +91,7 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
         </Button>
 
         <Button
+          data-testid="load-bracket-btn"
           variant="outline"
           onClick={() => setLoadDialogOpen(true)}
           className="border-gray-600 bg-gray-800 text-white hover:bg-gray-700"
@@ -136,15 +136,9 @@ export function BracketControls({ onResetName }: BracketControlsProps) {
         </DropdownMenu>
       </div>
 
-      <LoadBracketDialog
-        open={loadDialogOpen}
-        onOpenChange={setLoadDialogOpen}
-      />
+      <LoadBracketDialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen} />
 
-      <SaveBracketDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
-      />
+      <SaveBracketDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
     </>
   );
 }

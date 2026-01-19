@@ -79,8 +79,7 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
       if (touchDirection.current === null) {
         const threshold = 5;
         if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
-          touchDirection.current =
-            Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+          touchDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
         }
       }
 
@@ -146,8 +145,7 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
   const hasScrollableContent =
     canScrollLeft ||
     canScrollRight ||
-    (scrollRef.current &&
-      scrollRef.current.scrollWidth > scrollRef.current.clientWidth);
+    (scrollRef.current && scrollRef.current.scrollWidth > scrollRef.current.clientWidth);
 
   return (
     <div
@@ -236,13 +234,10 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
               targetElement = document.querySelector('[data-conference="NFC"]');
             } else {
               // From NFC, scroll to Super Bowl (the element with order-last)
-              const currentSection =
-                scrollRef.current?.closest("[data-conference]");
+              const currentSection = scrollRef.current?.closest("[data-conference]");
               const parent = currentSection?.parentElement;
               // Super Bowl is the div with order-last class
-              targetElement = parent?.querySelector(
-                ".order-last",
-              ) as HTMLElement;
+              targetElement = parent?.querySelector(".order-last") as HTMLElement;
             }
 
             if (targetElement) {
@@ -258,9 +253,7 @@ function ScrollHintWrapper({ children, conference }: ScrollHintWrapperProps) {
             "animate-pulse",
           )}
         >
-          <span>
-            Scroll down for {conference === "AFC" ? "NFC" : "Super Bowl"}
-          </span>
+          <span>Scroll down for {conference === "AFC" ? "NFC" : "Super Bowl"}</span>
           <ChevronDown className="h-3 w-3 animate-bounce" />
         </button>
       )}
@@ -272,47 +265,46 @@ export function Bracket({ showUserName = true }: BracketProps) {
   const { bracket } = useBracket();
 
   return (
-    <div className="flex min-w-fit flex-col items-center gap-4 rounded-2xl bg-black p-3 sm:gap-6 sm:p-4 md:gap-8 md:p-8 lg:p-6">
-        {/* Header */}
-        {showUserName && bracket.userName && (
-          <div className="text-center">
-            <h2 className="text-base font-semibold text-gray-400 sm:text-lg md:text-xl">
-              {bracket.userName}&apos;s Bracket
-            </h2>
-            {bracket.name && (
-              <h3 className="text-xs text-gray-500 sm:text-sm md:text-base">
-                {bracket.name}
-              </h3>
-            )}
-            {bracket.subtitle && (
-              <p className="mt-1 text-xs italic text-gray-500 sm:text-sm">
-                {bracket.subtitle}
-              </p>
-            )}
-          </div>
-        )}
+    <div
+      data-testid="bracket"
+      className="flex min-w-fit flex-col items-center gap-4 rounded-2xl bg-black p-3 sm:gap-6 sm:p-4 md:gap-8 md:p-8 lg:p-6"
+    >
+      {/* Header */}
+      {showUserName && bracket.userName && (
+        <div className="text-center">
+          <h2 className="text-base font-semibold text-gray-400 sm:text-lg md:text-xl">
+            {bracket.userName}&apos;s Bracket
+          </h2>
+          {bracket.name && (
+            <h3 className="text-xs text-gray-500 sm:text-sm md:text-base">{bracket.name}</h3>
+          )}
+          {bracket.subtitle && (
+            <p className="mt-1 text-xs italic text-gray-500 sm:text-sm">{bracket.subtitle}</p>
+          )}
+        </div>
+      )}
 
-        {/* Main Bracket Layout
+      {/* Main Bracket Layout
             Mobile (< md): Vertical stack (AFC, NFC, Super Bowl) - each bracket scrolls horizontally left-to-right
             Tablet/Medium Desktop (md to 2xl): Vertical stack with more spacing and larger elements
             Wide Desktop (2xl+): Horizontal (AFC | Super Bowl | NFC) - traditional bracket layout meeting in middle
         */}
-        <div className="flex w-full flex-col gap-4 sm:gap-6 md:gap-8 2xl:flex-row 2xl:items-start 2xl:justify-center 2xl:gap-8">
-          {/* AFC Bracket */}
-          <ScrollHintWrapper conference="AFC">
-            <ConferenceBracket conference="AFC" />
-          </ScrollHintWrapper>
+      <div className="flex w-full flex-col gap-4 sm:gap-6 md:gap-8 2xl:flex-row 2xl:items-start 2xl:justify-center 2xl:gap-8">
+        {/* AFC Bracket */}
+        <ScrollHintWrapper conference="AFC">
+          <ConferenceBracket conference="AFC" />
+        </ScrollHintWrapper>
 
-          {/* Super Bowl - Between conferences on desktop, after both on mobile */}
-          <div className="order-last flex justify-center 2xl:order-none 2xl:self-center">
-            <SuperBowl />
-          </div>
-
-          {/* NFC Bracket */}
-          <ScrollHintWrapper conference="NFC">
-            <ConferenceBracket conference="NFC" />
-          </ScrollHintWrapper>
+        {/* Super Bowl - Between conferences on desktop, after both on mobile */}
+        <div className="order-last flex justify-center 2xl:order-none 2xl:self-center">
+          <SuperBowl />
         </div>
+
+        {/* NFC Bracket */}
+        <ScrollHintWrapper conference="NFC">
+          <ConferenceBracket conference="NFC" />
+        </ScrollHintWrapper>
+      </div>
 
       {/* Completion status - hidden on mobile since MobileActionBar shows it prominently */}
       {bracket.isComplete && (

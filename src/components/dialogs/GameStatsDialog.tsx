@@ -1,22 +1,20 @@
 "use client";
 
 import { RefreshCw, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ExpandableDrives } from "@/components/game-stats/ExpandableDrives";
+import { GameStatsLoading } from "@/components/game-stats/GameStatsLoading";
+import { MomentumTab } from "@/components/game-stats/MomentumTab";
+import { PlayerLeadersCard } from "@/components/game-stats/PlayerLeadersCard";
+import { ScoringPlays } from "@/components/game-stats/ScoringPlays";
+import { TeamStatsComparison } from "@/components/game-stats/TeamStatsComparison";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { getTeamById } from "@/data/teams";
 import { useGameStats } from "@/hooks/useGameStats";
 import { extractEventId } from "@/lib/espn-boxscore";
 import { cn } from "@/lib/utils";
-import { getTeamById } from "@/data/teams";
-import type { Matchup, LiveMatchupResult, Team } from "@/types";
-import { TeamStatsComparison } from "@/components/game-stats/TeamStatsComparison";
-import { PlayerLeadersCard } from "@/components/game-stats/PlayerLeadersCard";
-import { ExpandableDrives } from "@/components/game-stats/ExpandableDrives";
-import { ScoringPlays } from "@/components/game-stats/ScoringPlays";
-import { GameStatsLoading } from "@/components/game-stats/GameStatsLoading";
+import type { LiveMatchupResult, Matchup, Team } from "@/types";
 
 interface GameStatsDialogProps {
   open: boolean;
@@ -25,7 +23,7 @@ interface GameStatsDialogProps {
   liveResult: LiveMatchupResult | null;
 }
 
-type TabId = "stats" | "leaders" | "plays";
+type TabId = "stats" | "leaders" | "plays" | "momentum";
 
 function formatQuarter(quarter: number): string {
   if (quarter === 1) return "1st";
@@ -36,35 +34,60 @@ function formatQuarter(quarter: number): string {
   return `Q${quarter}`;
 }
 
-export function GameStatsDialog({
-  open,
-  onOpenChange,
-  matchup,
-  liveResult,
-}: GameStatsDialogProps) {
+export function GameStatsDialog({ open, onOpenChange, matchup, liveResult }: GameStatsDialogProps) {
   const [activeTab, setActiveTab] = useState<TabId>("stats");
 
   // Extract ESPN event ID from the matchup ID
-  const eventId = liveResult?.matchupId
-    ? extractEventId(liveResult.matchupId)
-    : null;
+  const eventId = liveResult?.matchupId ? extractEventId(liveResult.matchupId) : null;
 
-  const { stats, isLoading, error, refetch, lastUpdated } = useGameStats(
-    eventId,
-    open,
-  );
+  const { stats, isLoading, error, refetch, lastUpdated } = useGameStats(eventId, open);
+
+  // Lock body scroll when dialog is open to prevent background scrolling
+  useEffect(() => {
+    if (open) {
+      // Lock both html and body to prevent all background scrolling
+      const html = document.documentElement;
+      const body = document.body;
+
+      const originalHtmlOverflow = html.style.overflow;
+      const originalBodyOverflow = body.style.overflow;
+
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+
+      // Block touch events on everything except the dialog content
+      const handleTouchMove = (e: TouchEvent) => {
+        // Find the dialog content element
+        const dialogContent = document.querySelector('[data-slot="dialog-content"]');
+        if (dialogContent && dialogContent.contains(e.target as Node)) {
+          // Allow scrolling within the dialog
+          return;
+        }
+        // Block scrolling outside the dialog
+        e.preventDefault();
+      };
+
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
+
+      return () => {
+        html.style.overflow = originalHtmlOverflow;
+        body.style.overflow = originalBodyOverflow;
+        document.removeEventListener("touchmove", handleTouchMove);
+      };
+    }
+  }, [open]);
 
   // Get team data
   const homeTeam = matchup.homeTeam ? getTeamById(matchup.homeTeam.id) : null;
   const awayTeam = matchup.awayTeam ? getTeamById(matchup.awayTeam.id) : null;
 
   // Map scores from liveResult (handles ESPN home/away vs bracket home/away)
-  const homeScore = liveResult?.homeTeamId === matchup.homeTeam?.id
-    ? liveResult?.homeScore
-    : liveResult?.awayScore;
-  const awayScore = liveResult?.awayTeamId === matchup.awayTeam?.id
-    ? liveResult?.awayScore
-    : liveResult?.homeScore;
+  const homeScore =
+    liveResult?.homeTeamId === matchup.homeTeam?.id ? liveResult?.homeScore : liveResult?.awayScore;
+  const awayScore =
+    liveResult?.awayTeamId === matchup.awayTeam?.id ? liveResult?.awayScore : liveResult?.homeScore;
 
   // Get game status text
   const getStatusText = () => {
@@ -84,11 +107,39 @@ export function GameStatsDialog({
     { id: "stats", label: "Stats" },
     { id: "leaders", label: "Leaders" },
     { id: "plays", label: "Plays" },
+    { id: "momentum", label: "Momentum" },
   ];
+
+  const handleTabKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    let newIndex: number | null = null;
+
+    switch (e.key) {
+      case "ArrowLeft":
+        newIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+        break;
+      case "ArrowRight":
+        newIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+        break;
+      case "Home":
+        newIndex = 0;
+        break;
+      case "End":
+        newIndex = tabs.length - 1;
+        break;
+    }
+
+    if (newIndex !== null) {
+      e.preventDefault();
+      setActiveTab(tabs[newIndex].id);
+      // Focus the newly selected tab
+      document.getElementById(`tab-${tabs[newIndex].id}`)?.focus();
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        data-testid="game-stats-dialog"
         className="max-h-[90vh] overflow-hidden border-gray-700 bg-gray-900 p-0 text-white sm:max-w-md md:max-w-lg lg:max-w-xl"
         showCloseButton={false}
       >
@@ -98,6 +149,7 @@ export function GameStatsDialog({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
+            aria-label="Close"
             className="absolute right-3 top-3 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white active:scale-95"
           >
             <X className="h-5 w-5" />
@@ -111,6 +163,8 @@ export function GameStatsDialog({
                 <img
                   src={awayTeam.logoUrl}
                   alt={awayTeam.name}
+                  width={48}
+                  height={48}
                   className="h-10 w-10 md:h-12 md:w-12"
                 />
               )}
@@ -173,6 +227,8 @@ export function GameStatsDialog({
                 <img
                   src={homeTeam.logoUrl}
                   alt={homeTeam.name}
+                  width={48}
+                  height={48}
                   className="h-10 w-10 md:h-12 md:w-12"
                 />
               )}
@@ -189,17 +245,21 @@ export function GameStatsDialog({
         </div>
 
         {/* Tab navigation */}
-        <div className="flex gap-1 border-b border-gray-700 px-4 md:px-6">
-          {tabs.map((tab) => (
+        <div role="tablist" className="flex gap-1 border-b border-gray-700 px-4 md:px-6">
+          {tabs.map((tab, index) => (
             <button
               key={tab.id}
+              id={`tab-${tab.id}`}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
               className={cn(
                 "relative px-4 py-2.5 text-sm font-medium transition-colors md:py-3 md:text-base",
-                activeTab === tab.id
-                  ? "text-white"
-                  : "text-gray-400 hover:text-gray-200",
+                activeTab === tab.id ? "text-white" : "text-gray-400 hover:text-gray-200",
               )}
             >
               {tab.label}
@@ -224,7 +284,12 @@ export function GameStatsDialog({
         </div>
 
         {/* Content area */}
-        <div className="max-h-[calc(90vh-180px)] overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+        <div
+          role="tabpanel"
+          id={`tabpanel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          className="max-h-[calc(90vh-180px)] overflow-y-auto overscroll-contain px-4 py-4 md:px-6 md:py-5"
+        >
           {isLoading && !stats ? (
             <GameStatsLoading />
           ) : error ? (
@@ -259,8 +324,8 @@ export function GameStatsDialog({
                   homeColor={homeTeam.primaryColor}
                 />
               )}
-              {activeTab === "plays" && (
-                stats.drives && stats.drives.length > 0 ? (
+              {activeTab === "plays" &&
+                (stats.drives && stats.drives.length > 0 ? (
                   <ExpandableDrives
                     drives={stats.drives}
                     homeTeamId={stats.homeTeamId}
@@ -276,13 +341,19 @@ export function GameStatsDialog({
                     homeColor={homeTeam.primaryColor}
                     awayColor={awayTeam.primaryColor}
                   />
-                )
+                ))}
+              {activeTab === "momentum" && (
+                <MomentumTab
+                  momentum={stats.momentum}
+                  homeColor={homeTeam.primaryColor}
+                  awayColor={awayTeam.primaryColor}
+                  homeTeamName={homeTeam.name}
+                  awayTeamName={awayTeam.name}
+                />
               )}
             </>
           ) : (
-            <div className="py-8 text-center text-gray-400">
-              No stats available
-            </div>
+            <div className="py-8 text-center text-gray-400">No stats available</div>
           )}
         </div>
 
@@ -292,7 +363,11 @@ export function GameStatsDialog({
             <span>Data from ESPN</span>
             {lastUpdated && (
               <span>
-                Updated {lastUpdated.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                Updated{" "}
+                {lastUpdated.toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
               </span>
             )}
           </div>

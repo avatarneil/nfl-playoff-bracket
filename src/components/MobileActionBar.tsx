@@ -1,14 +1,11 @@
 "use client";
 
-import { Download, FolderOpen, Loader2, Save, Share2 } from "lucide-react";
+import { FolderOpen, Loader2, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useBracket } from "@/contexts/BracketContext";
-import {
-  downloadImage,
-  generateBracketImage,
-  shareImage,
-} from "@/lib/image-generator";
+import { useView } from "@/contexts/ViewContext";
+import { downloadImage, generateBracketImage, shareImage } from "@/lib/image-generator";
 import { cn } from "@/lib/utils";
 import { LoadBracketDialog } from "./dialogs/LoadBracketDialog";
 import { SaveBracketDialog } from "./dialogs/SaveBracketDialog";
@@ -54,19 +51,23 @@ function ActionButton({
           variant === "default" && "group-hover:scale-110",
         )}
       />
-      <span className="text-[10px] font-bold uppercase tracking-wider md:text-xs">
-        {label}
-      </span>
+      <span className="text-[10px] font-bold uppercase tracking-wider md:text-xs">{label}</span>
     </button>
   );
 }
 
 export function MobileActionBar() {
   const { bracket } = useBracket();
+  const { viewMode } = useView();
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [_isSaving, setIsSaving] = useState(false);
+
+  // Hide action bar in Live Games view
+  if (viewMode === "live-games") {
+    return null;
+  }
 
   const generateImage = async (): Promise<Blob | null> => {
     setIsGenerating(true);
@@ -130,6 +131,8 @@ export function MobileActionBar() {
                 <img
                   src={winner.logoUrl}
                   alt={`${winner.city} ${winner.name}`}
+                  width={48}
+                  height={48}
                   className="h-10 w-10 object-contain md:h-12 md:w-12"
                 />
               </div>
@@ -142,9 +145,7 @@ export function MobileActionBar() {
                 <p className="truncate text-lg font-black uppercase tracking-tight text-white md:text-xl">
                   {winner.city} {winner.name}
                 </p>
-                <p className="text-xs font-medium text-white/40 md:text-sm">
-                  Super Bowl LX
-                </p>
+                <p className="text-xs font-medium text-white/40 md:text-sm">Super Bowl LX</p>
               </div>
 
               {/* Share button */}
@@ -152,6 +153,7 @@ export function MobileActionBar() {
                 type="button"
                 onClick={handleShare}
                 disabled={isGenerating}
+                aria-label="Share bracket"
                 className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white transition-all duration-150 hover:bg-white/90 active:scale-95 disabled:opacity-50 md:h-14 md:w-14"
               >
                 {isGenerating ? (
@@ -185,15 +187,9 @@ export function MobileActionBar() {
           </div>
         </div>
 
-        <LoadBracketDialog
-          open={loadDialogOpen}
-          onOpenChange={setLoadDialogOpen}
-        />
+        <LoadBracketDialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen} />
 
-        <SaveBracketDialog
-          open={saveDialogOpen}
-          onOpenChange={setSaveDialogOpen}
-        />
+        <SaveBracketDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
       </>
     );
   }
@@ -201,14 +197,13 @@ export function MobileActionBar() {
   // Normal state: clean floating dock
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-4 md:pb-6 lg:hidden safe-area-bottom">
+      <div
+        data-testid="mobile-action-bar"
+        className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-4 md:pb-6 lg:hidden safe-area-bottom"
+      >
         {/* Dock */}
         <div className="flex items-center gap-1 rounded-2xl border border-white/10 bg-black p-1.5 shadow-2xl md:gap-2 md:rounded-3xl md:p-2">
-          <ActionButton
-            onClick={() => setLoadDialogOpen(true)}
-            icon={FolderOpen}
-            label="Load"
-          />
+          <ActionButton onClick={() => setLoadDialogOpen(true)} icon={FolderOpen} label="Load" />
 
           {/* Divider */}
           <div className="mx-1 h-8 w-px bg-white/10 md:mx-1.5 md:h-10" />
@@ -234,15 +229,9 @@ export function MobileActionBar() {
         </div>
       </div>
 
-      <LoadBracketDialog
-        open={loadDialogOpen}
-        onOpenChange={setLoadDialogOpen}
-      />
+      <LoadBracketDialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen} />
 
-      <SaveBracketDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
-      />
+      <SaveBracketDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
     </>
   );
 }
