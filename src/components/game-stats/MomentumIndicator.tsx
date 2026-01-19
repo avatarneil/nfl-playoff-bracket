@@ -2,6 +2,29 @@
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Ensure a color has sufficient brightness for visibility on dark backgrounds.
+ * Lightens colors that are too dark.
+ */
+function ensureVisibleColor(hexColor: string): string {
+  const hex = hexColor.replace("#", "");
+  const r = Number.parseInt(hex.substring(0, 2), 16);
+  const g = Number.parseInt(hex.substring(2, 4), 16);
+  const b = Number.parseInt(hex.substring(4, 6), 16);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  if (luminance < 0.3) {
+    const factor = 0.4 / Math.max(luminance, 0.05);
+    const newR = Math.min(255, Math.round(r * factor));
+    const newG = Math.min(255, Math.round(g * factor));
+    const newB = Math.min(255, Math.round(b * factor));
+    return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+  }
+
+  return hexColor;
+}
+
 interface MomentumIndicatorProps {
   homeWinPct: number;
   awayColor: string;
@@ -21,6 +44,10 @@ export function MomentumIndicator({
 }: MomentumIndicatorProps) {
   const awayWinPct = 100 - homeWinPct;
   const momentum = homeWinPct > 50 ? "home" : homeWinPct < 50 ? "away" : "even";
+
+  // Ensure colors are visible on dark background
+  const visibleAwayColor = ensureVisibleColor(awayColor);
+  const visibleHomeColor = ensureVisibleColor(homeColor);
 
   return (
     <div className={cn("w-full", compact ? "space-y-1" : "space-y-2")}>
@@ -52,7 +79,7 @@ export function MomentumIndicator({
           )}
           style={{
             width: `${awayWinPct}%`,
-            backgroundColor: awayColor,
+            backgroundColor: visibleAwayColor,
           }}
         />
 
@@ -64,7 +91,7 @@ export function MomentumIndicator({
           )}
           style={{
             width: `${homeWinPct}%`,
-            backgroundColor: homeColor,
+            backgroundColor: visibleHomeColor,
           }}
         />
 

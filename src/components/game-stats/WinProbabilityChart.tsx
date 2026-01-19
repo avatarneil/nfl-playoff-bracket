@@ -11,6 +11,32 @@ import {
 } from "recharts";
 import type { WinProbabilityPoint } from "@/types";
 
+/**
+ * Ensure a color has sufficient brightness for visibility on dark backgrounds.
+ * Lightens colors that are too dark.
+ */
+function ensureVisibleColor(hexColor: string): string {
+  // Parse hex color
+  const hex = hexColor.replace("#", "");
+  const r = Number.parseInt(hex.substring(0, 2), 16);
+  const g = Number.parseInt(hex.substring(2, 4), 16);
+  const b = Number.parseInt(hex.substring(4, 6), 16);
+
+  // Calculate relative luminance (perceived brightness)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  // If too dark, lighten the color
+  if (luminance < 0.3) {
+    const factor = 0.4 / Math.max(luminance, 0.05); // Boost to ~40% luminance
+    const newR = Math.min(255, Math.round(r * factor));
+    const newG = Math.min(255, Math.round(g * factor));
+    const newB = Math.min(255, Math.round(b * factor));
+    return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+  }
+
+  return hexColor;
+}
+
 interface WinProbabilityChartProps {
   data: WinProbabilityPoint[];
   homeColor: string;
@@ -82,6 +108,10 @@ export function WinProbabilityChart({
   homeTeamName,
   awayTeamName,
 }: WinProbabilityChartProps) {
+  // Ensure colors are visible on dark background
+  const visibleHomeColor = ensureVisibleColor(homeColor);
+  const visibleAwayColor = ensureVisibleColor(awayColor);
+
   if (!data || data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-gray-500">
@@ -103,14 +133,14 @@ export function WinProbabilityChart({
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="homeGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={homeColor} stopOpacity={0.8} />
-              <stop offset="50%" stopColor={homeColor} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={homeColor} stopOpacity={0} />
+              <stop offset="0%" stopColor={visibleHomeColor} stopOpacity={0.8} />
+              <stop offset="50%" stopColor={visibleHomeColor} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={visibleHomeColor} stopOpacity={0} />
             </linearGradient>
             <linearGradient id="awayGradient" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor={awayColor} stopOpacity={0.8} />
-              <stop offset="50%" stopColor={awayColor} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={awayColor} stopOpacity={0} />
+              <stop offset="0%" stopColor={visibleAwayColor} stopOpacity={0.8} />
+              <stop offset="50%" stopColor={visibleAwayColor} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={visibleAwayColor} stopOpacity={0} />
             </linearGradient>
           </defs>
 
@@ -155,11 +185,11 @@ export function WinProbabilityChart({
           <Area
             type="monotone"
             dataKey="homeWinPercentage"
-            stroke={homeColor}
+            stroke={visibleHomeColor}
             fill="url(#homeGradient)"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: homeColor, stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: visibleHomeColor, stroke: "#fff", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -167,11 +197,11 @@ export function WinProbabilityChart({
       {/* Legend */}
       <div className="mt-2 flex justify-center gap-6 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: awayColor }} />
+          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: visibleAwayColor }} />
           <span className="text-gray-400">{awayTeamName}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: homeColor }} />
+          <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: visibleHomeColor }} />
           <span className="text-gray-400">{homeTeamName}</span>
         </div>
       </div>
